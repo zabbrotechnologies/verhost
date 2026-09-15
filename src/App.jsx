@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -6,6 +6,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 gsap.registerPlugin(ScrollTrigger);
 
 export default function App() {
+  const heroBgRef = useRef(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formData, setFormData] = useState({
@@ -13,7 +14,6 @@ export default function App() {
     email: '',
     company: '',
     service: 'web',
-    budget: '< $5,000 / Starter Project',
     details: ''
   });
 
@@ -31,6 +31,20 @@ export default function App() {
       requestAnimationFrame(raf);
     }
     requestAnimationFrame(raf);
+
+    // Parallax background animation for Hero
+    if (heroBgRef.current) {
+      gsap.to(heroBgRef.current, {
+        yPercent: 20,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: '#home',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true
+        }
+      });
+    }
 
     // GSAP Scroll Animations
     const sections = document.querySelectorAll('section');
@@ -60,6 +74,21 @@ export default function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // Construct formatted message for WhatsApp
+    const message = `*NEW PROJECT INQUIRY — VERHOST*\n\n` +
+      `*Name:* ${formData.name}\n` +
+      `*Email:* ${formData.email}\n` +
+      `*Company / Organization:* ${formData.company || 'Not Specified'}\n` +
+      `*Service Required:* ${formData.service}\n\n` +
+      `*Project Details:*\n${formData.details}`;
+
+    const encodedMessage = encodeURIComponent(message);
+    const whatsappUrl = `https://wa.me/919360171336?text=${encodedMessage}`;
+    
+    // Open WhatsApp
+    window.open(whatsappUrl, '_blank');
+    
     setFormSubmitted(true);
     setTimeout(() => {
       setFormSubmitted(false);
@@ -118,86 +147,70 @@ export default function App() {
 </header>
 {/* MAIN CONTAINER */}
 <main className="w-full pt-20" id="home">
-{/* 3. HERO SECTION */}
-<section className="relative w-full bg-[#FAFAF7] px-6 sm:px-10 lg:px-16 pt-16 pb-24 border-b border-[#E5EAE5] overflow-hidden">
-<div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
-{/* Left 7 Cols */}
-<div className="lg:col-span-7 flex flex-col items-start z-10">
-<div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E5EAE5] mb-6 shadow-sm">
-<span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
-<span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black">VERHOST / TECHNOLOGY &amp; CREATIVE SOLUTIONS</span>
-</div>
-<h1 className="font-display font-extrabold text-[44px] sm:text-[62px] lg:text-[76px] leading-[0.95] tracking-tight uppercase text-[#050505] mb-6">
-            YOUR BUSINESS.<br/>
-<span className="text-[#16A34A]">POWERED BY</span> TECHNOLOGY.
-          </h1>
-<p className="text-base sm:text-lg text-black/75 max-w-xl mb-10 leading-relaxed font-normal">
-            We turn ideas into real-world digital solutions — from websites and AI systems to data, creative technology and intelligent automation.
-          </p>
-<div className="flex flex-wrap items-center gap-4 mb-12">
-<a className="group inline-flex items-center gap-2.5 px-8 py-4 bg-[#050505] text-white rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-300 hover:bg-[#16A34A] shadow-[0_10px_25px_rgba(5,5,5,0.1)] hover:shadow-[0_12px_28px_rgba(22,163,74,0.3)]" href="#contact">
-<span>START A PROJECT</span>
-<span className="material-symbols-outlined text-base transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
-</a>
-<a className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-black text-[#050505] rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-black hover:text-white transition-all duration-200 shadow-sm" href="#services">
-<span>EXPLORE SERVICES</span>
-</a>
-</div>
-{/* Capability bar */}
-<div className="w-full pt-6 border-t border-[#E5EAE5] flex flex-wrap items-center gap-y-2 text-xs font-mono font-bold text-black tracking-wider uppercase">
-<span>WEB</span>
-<span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-<span>AI</span>
-<span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-<span>DATA</span>
-<span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-<span>CREATIVE</span>
-<span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-<span>AUTOMATION</span>
-</div>
-</div>
-{/* Right 5 Cols: Official VERHOST Brand Architecture Monolith with Glass Badges */}
-<div className="lg:col-span-5 relative flex justify-center items-center">
-<div className="relative w-full max-w-lg aspect-[4/5] bg-gradient-to-b from-[#090B09] via-[#050505] to-[#0A150D] rounded-2xl border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35)] overflow-hidden p-6 flex flex-col items-center justify-center group">
-  {/* Ambient Tech Glow */}
-  <div className="absolute w-72 h-72 bg-[#16A34A]/25 rounded-full blur-[90px] pointer-events-none transition-all duration-700 group-hover:bg-[#16A34A]/35"></div>
-  
-  {/* Engineering Grid Overlay */}
-  <div className="absolute inset-0 bg-[radial-gradient(#16A34A_1px,transparent_1px)] [background-size:24px_24px] opacity-15 pointer-events-none"></div>
-
-  {/* Official Logo Centerpiece */}
-  <div className="relative z-10 p-8 flex flex-col items-center justify-center max-w-[85%]">
-    <img 
-      alt="VERHOST Official Brand Mark" 
-      className="w-full max-w-[280px] h-auto object-contain filter drop-shadow-[0_15px_35px_rgba(22,163,74,0.3)] transition-transform duration-500 group-hover:scale-105 select-none" 
-      src="/verhost-logo-white.png"
-    />
-    <div className="mt-6 flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
-      <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] animate-ping"></span>
-      <span className="text-[10px] font-mono tracking-widest text-[#19C763] uppercase">SOVEREIGN CORE INFRASTRUCTURE</span>
+{/* 3. HERO SECTION (CENTERED + PARALLAX BACKGROUND) */}
+<section className="relative w-full min-h-[85vh] flex items-center justify-center px-6 sm:px-10 lg:px-16 pt-20 pb-28 border-b border-[#E5EAE5] overflow-hidden">
+  {/* Parallax Background */}
+  <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+    <div ref={heroBgRef} className="w-full h-[130%] -top-[15%] relative">
+      <img 
+        alt="Futuristic Sovereign Technology Matrix" 
+        className="w-full h-full object-cover filter brightness-[0.98] contrast-[1.05]" 
+        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop"
+      />
+      {/* Ambient Gradient Overlays for High Readability */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFAF7]/92 via-[#FAFAF7]/85 to-[#FAFAF7]"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(#16A34A_1px,transparent_1px)] [background-size:28px_28px] opacity-25"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#16A34A]/10 rounded-full blur-[140px]"></div>
     </div>
   </div>
 
-  {/* Top Glass Card */}
-  <div className="absolute top-5 left-5 bg-white/90 backdrop-blur-md px-4 py-3 rounded-xl border border-[#16A34A]/30 shadow-[0_8px_30px_rgba(0,0,0,0.08)] flex items-center gap-3">
-    <div className="w-2.5 h-2.5 rounded-full bg-[#16A34A] ring-4 ring-[#16A34A]/20"></div>
-    <div>
-      <span className="text-[10px] font-mono font-bold tracking-widest text-[#16A34A] uppercase block">AI • DATA • WEB</span>
-      <span className="text-xs font-bold text-[#050505] tracking-tight">Connected technology stack</span>
+  {/* Centered Hero Content */}
+  <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center text-center">
+    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#E5EAE5] mb-8 shadow-sm">
+      <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black">
+        VERHOST / TECHNOLOGY &amp; CREATIVE SOLUTIONS
+      </span>
     </div>
-  </div>
 
-  {/* Bottom Glass Card */}
-  <div className="absolute bottom-5 right-5 bg-[#050505]/90 backdrop-blur-md px-5 py-3.5 rounded-xl border border-white/10 shadow-[0_16px_36px_rgba(0,0,0,0.3)] text-white">
-    <div className="flex items-center gap-2 mb-0.5">
-      <span className="material-symbols-outlined text-[#19C763] text-sm">bolt</span>
-      <span className="text-[10px] font-mono font-bold tracking-wider text-[#19C763] uppercase">EXECUTION PIPELINE</span>
+    <h1 className="font-display font-extrabold text-[44px] sm:text-[68px] lg:text-[84px] leading-[0.95] tracking-tight uppercase text-[#050505] mb-8">
+      YOUR BUSINESS.<br />
+      <span className="text-[#16A34A]">POWERED BY</span> TECHNOLOGY.
+    </h1>
+
+    <p className="text-base sm:text-xl text-black/75 max-w-2xl mb-12 leading-relaxed font-normal">
+      We turn ideas into real-world digital solutions — from websites and AI systems to data, creative technology and intelligent automation.
+    </p>
+
+    <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
+      <a 
+        className="group inline-flex items-center gap-2.5 px-8 py-4 bg-[#050505] text-white rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-300 hover:bg-[#16A34A] shadow-[0_10px_25px_rgba(5,5,5,0.1)] hover:shadow-[0_12px_28px_rgba(22,163,74,0.3)]" 
+        href="#contact"
+      >
+        <span>START A PROJECT</span>
+        <span className="material-symbols-outlined text-base transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
+      </a>
+      <a 
+        className="inline-flex items-center gap-2 px-8 py-4 bg-white/90 backdrop-blur-md border-2 border-black text-[#050505] rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-black hover:text-white transition-all duration-200 shadow-sm" 
+        href="#services"
+      >
+        <span>EXPLORE SERVICES</span>
+      </a>
     </div>
-    <p className="text-xs font-semibold tracking-wider text-white/90 uppercase">BUILD • AUTOMATE • GROW</p>
+
+    {/* Capability bar */}
+    <div className="w-full max-w-xl pt-6 border-t border-[#E5EAE5] flex flex-wrap items-center justify-center gap-y-2 text-xs font-mono font-bold text-black tracking-wider uppercase">
+      <span>WEB</span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span>AI</span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span>DATA</span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span>CREATIVE</span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span>AUTOMATION</span>
+    </div>
   </div>
-</div>
-</div>
-</div>
 </section>
 {/* 4. BRAND STATEMENT */}
 <section className="w-full bg-white px-6 sm:px-10 lg:px-16 py-28 border-b border-[#E5EAE5]">
@@ -765,72 +778,6 @@ export default function App() {
 </div>
 </div>
 </section>
-{/* 10. TECHNOLOGY ECOSYSTEM SECTION */}
-<section className="w-full bg-[#FAFAF7] px-6 sm:px-10 lg:px-16 py-28 border-b border-[#E5EAE5]">
-<div className="max-w-[1440px] mx-auto">
-<div className="max-w-3xl mb-16">
-<span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A] block mb-2">ECOSYSTEM</span>
-<h2 className="font-display font-extrabold text-3xl sm:text-5xl tracking-tight uppercase text-[#050505]">
-            PROVEN TECHNOLOGIES. ZERO EXPERIMENTAL FLUFF.
-          </h2>
-</div>
-<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-{/* DEVELOPMENT */}
-<div className="bg-white p-8 rounded-xl border border-[#E5EAE5] shadow-sm">
-<span className="text-xs font-mono font-bold text-[#16A34A] uppercase tracking-wider block mb-4">01 / DEVELOPMENT</span>
-<h4 className="font-display font-bold text-xl uppercase mb-4 text-[#050505]">CORE CODEBASE</h4>
-<div className="flex flex-wrap gap-2">
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Python</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">JavaScript</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">React</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Node.js</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">HTML5</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">CSS3</span>
-</div>
-</div>
-{/* AI / ML */}
-<div className="bg-white p-8 rounded-xl border border-[#E5EAE5] shadow-sm">
-<span className="text-xs font-mono font-bold text-[#16A34A] uppercase tracking-wider block mb-4">02 / AI &amp; ML</span>
-<h4 className="font-display font-bold text-xl uppercase mb-4 text-[#050505]">INTELLIGENCE</h4>
-<div className="flex flex-wrap gap-2">
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">TensorFlow</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">PyTorch</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Scikit-learn</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">OpenCV</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">YOLO</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">LLMs</span>
-</div>
-</div>
-{/* DATA */}
-<div className="bg-white p-8 rounded-xl border border-[#E5EAE5] shadow-sm">
-<span className="text-xs font-mono font-bold text-[#16A34A] uppercase tracking-wider block mb-4">03 / DATA INFRA</span>
-<h4 className="font-display font-bold text-xl uppercase mb-4 text-[#050505]">TELEMETRY</h4>
-<div className="flex flex-wrap gap-2">
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Pandas</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">NumPy</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">SQL</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">MySQL</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">PostgreSQL</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">MongoDB</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Power BI</span>
-</div>
-</div>
-{/* TOOLS & CLOUD */}
-<div className="bg-white p-8 rounded-xl border border-[#E5EAE5] shadow-sm">
-<span className="text-xs font-mono font-bold text-[#16A34A] uppercase tracking-wider block mb-4">04 / CLOUD &amp; TOOLS</span>
-<h4 className="font-display font-bold text-xl uppercase mb-4 text-[#050505]">DEPLOYMENT</h4>
-<div className="flex flex-wrap gap-2">
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">GitHub</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Jupyter</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Google Colab</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">VS Code</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">Cloud Platforms</span>
-<span className="px-2.5 py-1 bg-[#FAFAF7] border border-[#E5EAE5] rounded text-xs font-mono font-medium">REST APIs</span>
-</div>
-</div>
-</div>
-</div>
-</section>
 {/* 11. ABOUT VERHOST (50/50 Split) */}
 <section className="w-full bg-white px-6 sm:px-10 lg:px-16 py-28 border-b border-[#E5EAE5]" id="about">
 <div className="max-w-[1440px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
@@ -928,7 +875,7 @@ export default function App() {
     </div>
     <h4 className="font-display font-bold text-2xl uppercase tracking-wider text-white">Inquiry Received</h4>
     <p className="text-xs sm:text-sm font-mono text-white/80 max-w-md mx-auto leading-relaxed">
-      A VERHOST lead systems architect has received your specifications. We will review your project parameters and contact you within 2 hours.
+      Your project parameters have been forwarded to our lead systems architect via WhatsApp (+91 93601 71336). We will review your project and respond shortly.
     </p>
     <button
       type="button"
@@ -992,19 +939,7 @@ export default function App() {
         </select>
       </div>
     </div>
-    <div>
-      <label className="block text-xs font-mono uppercase tracking-wider text-white/70 mb-1">Estimated Budget Range</label>
-      <select 
-        className="w-full bg-black border border-white/15 rounded-lg px-4 py-3 text-sm text-white focus:outline-none focus:border-[#16A34A] transition-colors"
-        value={formData.budget}
-        onChange={(e) => setFormData({ ...formData, budget: e.target.value })}
-      >
-        <option value="< $5,000 / Starter Project">&lt; $5,000 / Starter Project</option>
-        <option value="$5,000 — $15,000 / Growth Solution">$5,000 — $15,000 / Growth Solution</option>
-        <option value="$15,000 — $50,000 / Enterprise Scale">$15,000 — $50,000 / Enterprise Scale</option>
-        <option value="$50,000+ / Full Sovereign Infrastructure">$50,000+ / Full Sovereign Infrastructure</option>
-      </select>
-    </div>
+
     <div>
       <label className="block text-xs font-mono uppercase tracking-wider text-white/70 mb-1">Project Details *</label>
       <textarea 
@@ -1017,8 +952,8 @@ export default function App() {
       ></textarea>
     </div>
     <button className="w-full py-4 bg-[#16A34A] hover:bg-[#19C763] text-white font-bold text-xs sm:text-sm font-mono tracking-wider uppercase rounded-lg transition-all duration-300 shadow-[0_10px_25px_rgba(22,163,74,0.35)] flex items-center justify-center gap-2" type="submit">
-      <span>SEND INQUIRY</span>
-      <span className="material-symbols-outlined text-base">arrow_forward</span>
+      <span>SEND INQUIRY VIA WHATSAPP</span>
+      <span className="material-symbols-outlined text-base">chat</span>
     </button>
   </form>
 )}
