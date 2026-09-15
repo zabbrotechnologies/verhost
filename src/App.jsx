@@ -516,7 +516,7 @@ export default function App() {
           </div>
 
           {/* Headline */}
-          <h1 id="hero-headline" className="font-display font-extrabold text-[48px] sm:text-[76px] lg:text-[96px] leading-[0.95] tracking-tight uppercase text-white mb-8 drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
+          <h1 id="hero-headline" className="font-display font-bold text-[44px] sm:text-[72px] lg:text-[94px] leading-[0.96] tracking-[-0.04em] uppercase text-white mb-8 drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
             <span className="reveal-line block">YOUR BUSINESS.</span>
             <span className="reveal-line block">
               <span className="text-[#19C763] drop-shadow-[0_0_35px_rgba(25,199,99,0.7)]">POWERED BY</span> TECHNOLOGY.
