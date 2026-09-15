@@ -26,24 +26,31 @@ export default function App() {
       smoothWheel: true,
     });
 
-    function raf(time) {
-      lenis.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    // Synchronize Lenis with GSAP ScrollTrigger for true parallax
+    lenis.on('scroll', ScrollTrigger.update);
+    const tickerCallback = (time) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tickerCallback);
+    gsap.ticker.lagSmoothing(0);
 
-    // Parallax background animation for Hero
+    // Dynamic Parallax background animation for Hero
     if (heroBgRef.current) {
-      gsap.to(heroBgRef.current, {
-        yPercent: 20,
-        ease: 'none',
-        scrollTrigger: {
-          trigger: '#home',
-          start: 'top top',
-          end: 'bottom top',
-          scrub: true
+      gsap.fromTo(
+        heroBgRef.current,
+        { y: -60, scale: 1.15 },
+        {
+          y: 130,
+          scale: 1.0,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: '#hero-section',
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1.2
+          }
         }
-      });
+      );
     }
 
     // GSAP Scroll Animations
@@ -68,6 +75,7 @@ export default function App() {
 
     return () => {
       lenis.destroy();
+      gsap.ticker.remove(tickerCallback);
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
   }, []);
@@ -148,10 +156,10 @@ export default function App() {
 {/* MAIN CONTAINER */}
 <main className="w-full pt-20" id="home">
 {/* 3. HERO SECTION (CENTERED + GREEN TECH PARALLAX BACKGROUND) */}
-<section className="relative w-full min-h-[90vh] flex items-center justify-center px-6 sm:px-10 lg:px-16 pt-24 pb-28 border-b border-[#E5EAE5] overflow-hidden bg-[#050B06]">
+<section id="hero-section" className="relative w-full min-h-[90vh] flex items-center justify-center px-6 sm:px-10 lg:px-16 pt-24 pb-28 border-b border-[#E5EAE5] overflow-hidden bg-[#050B06]">
   {/* Parallax Background */}
   <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-    <div ref={heroBgRef} className="w-full h-[150%] -top-[25%] relative">
+    <div ref={heroBgRef} className="w-full h-[160%] -top-[30%] absolute will-change-transform">
       <img 
         alt="Green Eco-Friendly Tree and Futuristic Circuit Board Technology" 
         className="w-full h-full object-cover filter brightness-[0.85] contrast-[1.15]" 
