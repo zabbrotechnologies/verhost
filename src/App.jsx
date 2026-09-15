@@ -147,51 +147,51 @@ export default function App() {
 </header>
 {/* MAIN CONTAINER */}
 <main className="w-full pt-20" id="home">
-{/* 3. HERO SECTION (CENTERED + PARALLAX BACKGROUND) */}
-<section className="relative w-full min-h-[85vh] flex items-center justify-center px-6 sm:px-10 lg:px-16 pt-20 pb-28 border-b border-[#E5EAE5] overflow-hidden">
+{/* 3. HERO SECTION (CENTERED + GREEN TECH PARALLAX BACKGROUND) */}
+<section className="relative w-full min-h-[90vh] flex items-center justify-center px-6 sm:px-10 lg:px-16 pt-24 pb-28 border-b border-[#E5EAE5] overflow-hidden bg-[#050B06]">
   {/* Parallax Background */}
   <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-    <div ref={heroBgRef} className="w-full h-[130%] -top-[15%] relative">
+    <div ref={heroBgRef} className="w-full h-[140%] -top-[20%] relative">
       <img 
-        alt="Futuristic Sovereign Technology Matrix" 
-        className="w-full h-full object-cover filter brightness-[0.98] contrast-[1.05]" 
-        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2000&auto=format&fit=crop"
+        alt="Futuristic Green Artificial Intelligence and Cybernetic Technology" 
+        className="w-full h-full object-cover filter brightness-[0.75] contrast-[1.25] hue-rotate-[340deg]" 
+        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop"
       />
-      {/* Ambient Gradient Overlays for High Readability */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFAF7]/92 via-[#FAFAF7]/85 to-[#FAFAF7]"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(#16A34A_1px,transparent_1px)] [background-size:28px_28px] opacity-25"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#16A34A]/10 rounded-full blur-[140px]"></div>
+      {/* High-Contrast Emerald & Dark Vignette Overlays for Maximum Visibility */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050B06]/85 via-[#050D07]/75 to-[#0A0D0A]/95"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(#19C763_1.5px,transparent_1.5px)] [background-size:28px_28px] opacity-25"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#16A34A]/25 rounded-full blur-[160px]"></div>
     </div>
   </div>
 
-  {/* Centered Hero Content */}
+  {/* Centered Hero Content (Exclusively White & Green for High Contrast) */}
   <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center text-center">
-    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/90 backdrop-blur-md border border-[#E5EAE5] mb-8 shadow-sm">
-      <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
-      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-black">
+    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/60 backdrop-blur-md border border-[#16A34A]/50 mb-8 shadow-[0_0_15px_rgba(22,163,74,0.2)]">
+      <span className="w-2 h-2 rounded-full bg-[#19C763] animate-pulse"></span>
+      <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#19C763]">
         VERHOST / TECHNOLOGY &amp; CREATIVE SOLUTIONS
       </span>
     </div>
 
-    <h1 className="font-display font-extrabold text-[44px] sm:text-[68px] lg:text-[84px] leading-[0.95] tracking-tight uppercase text-[#050505] mb-8">
+    <h1 className="font-display font-extrabold text-[46px] sm:text-[70px] lg:text-[88px] leading-[0.95] tracking-tight uppercase text-white mb-8 drop-shadow-[0_4px_25px_rgba(0,0,0,0.9)]">
       YOUR BUSINESS.<br />
-      <span className="text-[#16A34A]">POWERED BY</span> TECHNOLOGY.
+      <span className="text-[#19C763] drop-shadow-[0_0_35px_rgba(25,199,99,0.6)]">POWERED BY</span> TECHNOLOGY.
     </h1>
 
-    <p className="text-base sm:text-xl text-black/75 max-w-2xl mb-12 leading-relaxed font-normal">
+    <p className="text-base sm:text-xl text-white/90 max-w-2xl mb-12 leading-relaxed font-normal drop-shadow-[0_2px_10px_rgba(0,0,0,0.8)]">
       We turn ideas into real-world digital solutions — from websites and AI systems to data, creative technology and intelligent automation.
     </p>
 
     <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
       <a 
-        className="group inline-flex items-center gap-2.5 px-8 py-4 bg-[#050505] text-white rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-300 hover:bg-[#16A34A] shadow-[0_10px_25px_rgba(5,5,5,0.1)] hover:shadow-[0_12px_28px_rgba(22,163,74,0.3)]" 
+        className="group inline-flex items-center gap-2.5 px-8 py-4 bg-[#16A34A] text-white rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase transition-all duration-300 hover:bg-[#19C763] shadow-[0_10px_30px_rgba(22,163,74,0.4)] hover:shadow-[0_12px_35px_rgba(25,199,99,0.6)]" 
         href="#contact"
       >
         <span>START A PROJECT</span>
         <span className="material-symbols-outlined text-base transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
       </a>
       <a 
-        className="inline-flex items-center gap-2 px-8 py-4 bg-white/90 backdrop-blur-md border-2 border-black text-[#050505] rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-black hover:text-white transition-all duration-200 shadow-sm" 
+        className="inline-flex items-center gap-2 px-8 py-4 bg-black/60 backdrop-blur-md border border-[#16A34A]/50 text-white rounded-lg text-xs sm:text-sm font-bold tracking-wider uppercase hover:bg-white hover:text-black hover:border-white transition-all duration-200 shadow-md" 
         href="#services"
       >
         <span>EXPLORE SERVICES</span>
@@ -199,15 +199,15 @@ export default function App() {
     </div>
 
     {/* Capability bar */}
-    <div className="w-full max-w-xl pt-6 border-t border-[#E5EAE5] flex flex-wrap items-center justify-center gap-y-2 text-xs font-mono font-bold text-black tracking-wider uppercase">
+    <div className="w-full max-w-xl pt-6 border-t border-white/20 flex flex-wrap items-center justify-center gap-y-2 text-xs font-mono font-bold text-white tracking-wider uppercase">
       <span>WEB</span>
-      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#19C763] shadow-[0_0_8px_#19C763]"></span>
       <span>AI</span>
-      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#19C763] shadow-[0_0_8px_#19C763]"></span>
       <span>DATA</span>
-      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#19C763] shadow-[0_0_8px_#19C763]"></span>
       <span>CREATIVE</span>
-      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
+      <span className="mx-3 w-1.5 h-1.5 rounded-full bg-[#19C763] shadow-[0_0_8px_#19C763]"></span>
       <span>AUTOMATION</span>
     </div>
   </div>
