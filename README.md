@@ -1,56 +1,79 @@
-# verhost
+# VERHOST — Sovereign Technology, AI Systems & Creative Digital Infrastructure
 
-> **ROOTED. CONNECTED. ONLINE.** — Your Business. Powered by Technology.
+> **YOUR BUSINESS. POWERED BY TECHNOLOGY.**
 
-Enterprise-grade multi-page website built with semantic HTML5, pure Vanilla CSS, and modern modular JavaScript based on the **VerHost Obsidian Emerald** design system.
+VERHOST is a modern, high-performance enterprise web platform built with React, Vite, Tailwind CSS, Lenis smooth scrolling, and GSAP scroll animations.
 
-## 🚀 Overview
+---
 
-VerHost delivers full-spectrum digital infrastructure and intelligent systems under one roof:
-- **Web Development & Cloud Applications** (Next.js SSR, custom web apps, headless e-commerce)
-- **Promotion Ads Generation** (Algorithmic ad copy, multivariate testing, ROAS attribution)
-- **Posters, Brand Identity & Creative Design** (Commercial identity, 4K digital & print assets)
-- **Data Analytics & KPI Systems** (Real-time telemetry, automated ETL pipelines)
-- **ML Future Prediction** (Demand curves, churn forecasting, risk modeling)
-- **AI Chatbots & Autonomous Agents** (24/7 client engagement, enterprise RAG, zero-data egress)
+## ⚡ Key Highlights & Architecture
 
-## 📁 Repository Structure
+- **Modern Stack**: React 18 + Vite 8 + Tailwind CSS + PostCSS
+- **Smooth Inertial Scrolling**: Powered by [Lenis](https://lenis.darkroom.engineering/)
+- **Scroll Orchestration**: Scroll-triggered animations via [GSAP](https://gsap.com/)
+- **Sovereign Brand Integration**: Official VERHOST brandmark, responsive typography, and curated enterprise glassmorphism
+- **Production Ready**: Zero build errors, optimized bundles, SEO meta tags, and interactive inquiry console
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js (v18 or higher recommended)
+- npm or yarn
+
+### Installation
+
+```bash
+# Clone repository
+git clone https://github.com/zabbrotechnologies/verhost.git
+
+# Navigate into project directory
+cd verhost
+
+# Install dependencies
+npm install
+```
+
+### Running Locally
+
+```bash
+npm run dev
+```
+
+Visit `http://localhost:5173` to explore the live application.
+
+### Building for Production
+
+```bash
+npm run build
+```
+
+The production assets will be built into the `dist/` directory.
+
+---
+
+## 📁 Project Structure
 
 ```
 verhost/
-├── index.html              # Main landing page with computational nexus centerpiece
-├── services.html           # In-depth architectural guide for all 6 service pillars
-├── work.html               # Portfolio & case studies with dynamic category filtering
-├── about.html              # Company philosophy, 4 core pillars & infrastructure SLA
-├── contact.html            # Interactive Project Scope & Cost Estimator + inquiry form
-├── css/
-│   ├── variables.css       # Obsidian Emerald design tokens (colors, fonts, glassmorphism)
-│   ├── base.css            # Typography hierarchy, CSS reset & 12-column grid
-│   ├── components.css      # Reusable buttons, cards, code windows, form controls, chatbot widget
-│   └── main.css            # Section layouts, ambient photonic glows, responsive queries
-├── js/
-│   ├── main.js             # Sticky header, mobile drawer menu, route tracker, toast notifications
-│   ├── chatbot.js          # Interactive floating AI assistant widget
-│   ├── estimator.js        # Dynamic real-time project scope & pricing calculator
-│   ├── portfolio.js        # Category filter engine & blueprint modal inspector
-│   └── telemetry.js        # Edge latency & throughput counter simulation
-├── DESIGN.md               # Visual design tokens & architectural specs
-└── README.md               # Project documentation
+├── index.html              # Main HTML entry with Google fonts & metadata
+├── package.json            # Project dependencies and scripts
+├── tailwind.config.js      # Brand design system tokens
+├── postcss.config.js       # PostCSS plugins (Tailwind, Autoprefixer)
+├── vite.config.js          # Vite configuration
+├── public/                 # Static brand assets & logos
+│   ├── verhost-logo.png
+│   ├── verhost-logo-transparent.png
+│   ├── verhost-logo-white.png
+│   └── favicon.png
+└── src/
+    ├── main.jsx            # React root mount
+    ├── index.css           # Global stylesheet & Tailwind directives
+    └── App.jsx             # Main interactive application & sections
 ```
 
-## 🛠️ Local Development
+---
 
-Serve the static files using any HTTP server:
-
-```bash
-# Using Python
-python -m http.server 8080
-
-# Using Node / npx
-npx serve .
-```
-
-Open `http://localhost:8080` in your browser.
-
-## 📄 License & Rights
-© 2026 VerHost. All rights reserved.
+## 📄 Rights & Copyright
+© 2026 VERHOST. All rights reserved.
