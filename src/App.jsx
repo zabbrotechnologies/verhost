@@ -151,16 +151,16 @@ export default function App() {
 <section className="relative w-full min-h-[90vh] flex items-center justify-center px-6 sm:px-10 lg:px-16 pt-24 pb-28 border-b border-[#E5EAE5] overflow-hidden bg-[#050B06]">
   {/* Parallax Background */}
   <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-    <div ref={heroBgRef} className="w-full h-[140%] -top-[20%] relative">
+    <div ref={heroBgRef} className="w-full h-[150%] -top-[25%] relative">
       <img 
-        alt="Futuristic Green Artificial Intelligence and Cybernetic Technology" 
-        className="w-full h-full object-cover filter brightness-[0.75] contrast-[1.25] hue-rotate-[340deg]" 
-        src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2000&auto=format&fit=crop"
+        alt="Green Eco-Friendly Tree and Futuristic Circuit Board Technology" 
+        className="w-full h-full object-cover filter brightness-[0.85] contrast-[1.15]" 
+        src="/hero-bg.jpg"
       />
       {/* High-Contrast Emerald & Dark Vignette Overlays for Maximum Visibility */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#050B06]/85 via-[#050D07]/75 to-[#0A0D0A]/95"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(#19C763_1.5px,transparent_1.5px)] [background-size:28px_28px] opacity-25"></div>
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-[#16A34A]/25 rounded-full blur-[160px]"></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-[#050B06]/80 via-[#050D07]/60 to-[#0A0D0A]/95"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(#19C763_1px,transparent_1px)] [background-size:32px_32px] opacity-20"></div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[750px] h-[750px] bg-[#16A34A]/20 rounded-full blur-[170px]"></div>
     </div>
   </div>
 
