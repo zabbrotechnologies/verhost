@@ -2,18 +2,42 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #FAFAF7;
+    color: #050505;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
 
-    @layer base {
-      html, body {
-        margin: 0;
-        padding: 0;
-        background-color: #FAFAF7;
-        color: #050505;
-        font-family: 'Inter', sans-serif;
-        text-rendering: optimizeLegibility;
-        -webkit-font-smoothing: antialiased;
-      }
-    }
-    ::-webkit-scrollbar { display: none; }
-    .font-mono-code { font-family: 'JetBrains Mono', monospace; }
-  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+  }
+
+  p {
+    letter-spacing: -0.01em;
+    line-height: 1.7;
+  }
+
+  /* Refined Mono Badges and Code */
+  code, kbd, samp, pre, .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-feature-settings: "zero", "ss02";
+  }
+}
+
+/* Custom minimal scrollbar */
+::-webkit-scrollbar {
+  display: none;
+}
+
+.font-tech {
+  font-family: 'Space Grotesk', sans-serif;
+}

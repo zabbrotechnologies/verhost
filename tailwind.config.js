@@ -21,9 +21,20 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        display: ['Manrope', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace']
+        sans: ['"Plus Jakarta Sans"', 'Inter', '-apple-system', 'sans-serif'],
+        display: ['Outfit', '"Plus Jakarta Sans"', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'monospace'],
+        tech: ['"Space Grotesk"', 'sans-serif']
+      },
+      letterSpacing: {
+        'tightest': '-0.04em',
+        'tighter': '-0.03em',
+        'tight': '-0.015em',
+        'normal': '0em',
+        'wide': '0.04em',
+        'wider': '0.08em',
+        'widest': '0.15em',
+        'mega': '0.22em'
       }
     }
   },
