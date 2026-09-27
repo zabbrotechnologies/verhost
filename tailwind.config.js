@@ -22,7 +22,9 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        display: ['"Space Grotesk"', 'Inter', 'sans-serif'],
+        display: ['Butler', 'Georgia', 'serif'],
+        serif: ['Butler', 'Georgia', 'serif'],
+        butler: ['Butler', 'Georgia', 'serif'],
         mono: ['"Space Grotesk"', 'monospace'],
         tech: ['"Space Grotesk"', 'sans-serif']
       },

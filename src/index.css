@@ -1,3 +1,41 @@
+@import url('https://fonts.cdnfonts.com/css/butler');
+
+@font-face {
+  font-family: 'Butler';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Butler'), local('Butler Light'), url('https://fonts.cdnfonts.com/s/16241/Butler_Light.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Butler';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Butler'), local('Butler Regular'), url('https://fonts.cdnfonts.com/s/16241/Butler_Regular.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Butler';
+  font-style: normal;
+  font-weight: 500;
+  src: local('Butler'), local('Butler Medium'), url('https://fonts.cdnfonts.com/s/16241/Butler_Medium.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Butler';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Butler'), local('Butler Bold'), url('https://fonts.cdnfonts.com/s/16241/Butler_Bold.woff') format('woff');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Butler';
+  font-style: normal;
+  font-weight: 800;
+  src: local('Butler'), local('Butler ExtraBold'), url('https://fonts.cdnfonts.com/s/16241/Butler_ExtraBold.woff') format('woff');
+  font-display: swap;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -16,8 +54,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', 'Inter', -apple-system, sans-serif;
-    letter-spacing: -0.04em;
+    font-family: 'Butler', Georgia, 'Times New Roman', serif;
+    letter-spacing: -0.02em;
     font-weight: 700;
   }
 
@@ -40,4 +78,10 @@
 
 .font-tech {
   font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-display,
+.font-serif,
+.font-butler {
+  font-family: 'Butler', Georgia, 'Times New Roman', serif;
 }
