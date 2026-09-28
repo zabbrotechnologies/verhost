@@ -587,12 +587,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-white text-[#050505] selection:bg-[#16A34A] selection:text-white font-sans antialiased w-full max-w-full overflow-x-hidden">
       
-      {/* 1. WHITE LIQUID GLASS NAVIGATION BAR */}
+      {/* 1. ALWAYS SOLID WHITE NAVIGATION BAR */}
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white border-b border-black/10 ${
           scrolled 
-            ? 'bg-white/90 backdrop-blur-2xl border-b border-black/10 py-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.08),inset_0_1px_1px_rgba(255,255,255,0.9)]' 
-            : 'bg-white/80 backdrop-blur-2xl border-b border-black/10 py-4 sm:py-5 shadow-[0_4px_30px_rgba(0,0,0,0.05),inset_0_1px_1px_rgba(255,255,255,0.85)]'
+            ? 'py-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.08)]' 
+            : 'py-4 sm:py-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)]'
         }`}
         role="banner"
       >
@@ -922,11 +922,11 @@ export default function App() {
 
         {/* 4. SERVICES — ANIMATED ONE-BY-ONE PINNED SHOWCASE */}
         <section id="services" className="relative w-full bg-[#FAFAF7] border-b border-black/10 overflow-hidden">
-          <div className="max-w-[1360px] mx-auto w-full px-6 sm:px-10 lg:px-16 py-16 sm:py-20 min-h-screen flex flex-col justify-between">
+          <div className="max-w-[1360px] mx-auto w-full px-4 sm:px-8 lg:px-16 pt-20 pb-4 sm:py-16 lg:py-20 min-h-[100dvh] flex flex-col justify-between">
             
-            {/* Header with Title + 6 Practice Progress Tabs */}
-            <div id="services-header" className="w-full pb-6 sm:pb-8 border-b border-black/10 mb-6 sm:mb-8">
-              <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
+            {/* ─── DESKTOP HEADER (lg and up) ─── */}
+            <div id="services-header" className="hidden lg:block w-full pb-6 border-b border-black/10 mb-6">
+              <div className="flex items-center justify-between gap-4 mb-3">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
                   <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHAT WE DO</span>
@@ -939,8 +939,8 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
-                <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] max-w-3xl leading-[1.02]">
+              <div className="flex items-end justify-between gap-6 mb-5">
+                <h2 className="font-display font-bold text-4xl lg:text-5xl tracking-tight uppercase text-[#050505] max-w-3xl leading-[1.02]">
                   TECHNOLOGY BUILT AROUND YOUR BUSINESS.
                 </h2>
                 <p className="text-sm font-sans text-black/60 max-w-sm leading-relaxed">
@@ -948,8 +948,8 @@ export default function App() {
                 </p>
               </div>
 
-              {/* 6 Interactive Discipline Navigation Pills */}
-              <div className="flex flex-wrap items-center gap-2 pt-2">
+              {/* Desktop 6 Discipline Navigation Pills */}
+              <div className="flex items-center gap-2 pt-1">
                 {services.map((srv, idx) => {
                   const isCurrent = activeServiceIdx === idx;
                   return (
@@ -957,7 +957,7 @@ export default function App() {
                       key={srv.num}
                       type="button"
                       onClick={() => scrollToService(idx)}
-                      className={`px-3.5 py-1.5 rounded-full font-mono text-[11px] font-bold transition-all duration-300 uppercase cursor-pointer ${
+                      className={`px-4 py-1.5 rounded-full font-mono text-xs font-bold transition-all duration-300 uppercase cursor-pointer ${
                         isCurrent 
                           ? 'bg-[#16A34A] text-white shadow-md scale-105' 
                           : 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10'
@@ -970,69 +970,98 @@ export default function App() {
               </div>
             </div>
 
-            {/* Pinned Card Deck Stage: 6 Cards animate 1-by-1 */}
-            <div className="relative w-full h-[540px] sm:h-[580px] lg:h-[520px]">
+            {/* ─── MOBILE / TABLET HEADER (Under lg) — Ultra Compact so Service Card Takes the Full Screen! ─── */}
+            <div className="block lg:hidden w-full mb-3 pb-2 border-b border-black/10">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHAT WE DO</span>
+                </div>
+                <span className="font-mono text-xs font-bold text-[#16A34A]">
+                  0{activeServiceIdx + 1} / 06
+                </span>
+              </div>
+              
+              {/* Mobile 6 Pills in a single horizontal strip */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                {services.map((srv, idx) => {
+                  const isCurrent = activeServiceIdx === idx;
+                  return (
+                    <button
+                      key={srv.num}
+                      type="button"
+                      onClick={() => scrollToService(idx)}
+                      className={`flex-shrink-0 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold transition-all duration-300 uppercase ${
+                        isCurrent 
+                          ? 'bg-[#16A34A] text-white shadow-sm' 
+                          : 'bg-black/5 text-black/60'
+                      }`}
+                    >
+                      {srv.num} {srv.title.split(' ')[0]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Pinned Card Deck Stage: Full Screen Adaptive Height */}
+            <div className="relative w-full h-[calc(100dvh-175px)] min-h-[480px] max-h-[640px] lg:h-[500px]">
               {services.map((srv, idx) => (
                 <div
                   key={srv.num}
-                  className="service-deck-card absolute inset-0 rounded-3xl border border-black/10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] bg-white overflow-hidden will-change-transform flex flex-col justify-center"
+                  className="service-deck-card absolute inset-0 rounded-2xl sm:rounded-3xl border border-black/10 shadow-[0_20px_60px_rgba(0,0,0,0.08)] bg-white overflow-hidden will-change-transform flex flex-col justify-between p-5 sm:p-8 lg:p-10"
                   style={{ zIndex: idx + 5 }}
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-6 sm:p-10 lg:p-12 relative overflow-hidden h-full">
-                    {/* Watermark Number in Butler Serif */}
-                    <span className="absolute -bottom-8 -right-4 font-display font-bold text-[140px] sm:text-[220px] text-black/[0.03] select-none pointer-events-none leading-none">
-                      {srv.num}
-                    </span>
+                  {/* Watermark Number in Butler Serif */}
+                  <span className="absolute -bottom-6 -right-2 font-display font-bold text-[120px] sm:text-[180px] lg:text-[220px] text-black/[0.03] select-none pointer-events-none leading-none">
+                    {srv.num}
+                  </span>
 
-                    {/* Left: Service Details */}
-                    <div className="lg:col-span-7 flex flex-col justify-center relative z-10">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="px-2.5 py-0.5 bg-[#16A34A]/10 text-[#16A34A] font-mono text-xs font-bold rounded border border-[#16A34A]/25">
-                          PRACTICE {srv.num} / 06
-                        </span>
-                        <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#16A34A]">
-                          &bull; {srv.tagline}
-                        </span>
-                      </div>
+                  {/* Top Badge & Tagline */}
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-[#16A34A]/10 text-[#16A34A] font-mono text-xs font-bold rounded border border-[#16A34A]/25">
+                        PRACTICE {srv.num} / 06
+                      </span>
+                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#16A34A] hidden sm:inline">
+                        &bull; {srv.tagline}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-black/40 uppercase">VERHOST ARCHITECTURE</span>
+                  </div>
 
-                      <h3 className="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-[#050505] uppercase tracking-tight mb-4">
+                  {/* Middle: Content Grid */}
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-10 items-center relative z-10 my-auto">
+                    
+                    {/* Left Details */}
+                    <div className="lg:col-span-7 flex flex-col justify-center">
+                      <h3 className="font-display font-bold text-2xl sm:text-4xl lg:text-5xl text-[#050505] uppercase tracking-tight mb-2 sm:mb-3">
                         {srv.title}
                       </h3>
 
-                      <p className="text-base sm:text-lg text-black/75 leading-relaxed mb-6 font-normal font-sans">
+                      <p className="text-xs sm:text-base text-black/75 leading-relaxed mb-3 sm:mb-5 font-normal">
                         {srv.description}
                       </p>
 
                       {/* Deliverables */}
-                      <div className="mb-6 pt-4 border-t border-black/10">
-                        <div className="text-[11px] font-mono font-bold uppercase tracking-widest text-black/50 mb-3">
+                      <div className="mb-3 sm:mb-5 pt-2 sm:pt-3 border-t border-black/10">
+                        <div className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-widest text-black/50 mb-1.5 sm:mb-2">
                           CORE DELIVERABLES &amp; CAPABILITIES
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-black/80">
+                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono text-black/80">
                           {srv.deliverables.map((item, dIdx) => (
-                            <div key={dIdx} className="flex items-center gap-2">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
-                              <span>{item}</span>
+                            <div key={dIdx} className="flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] flex-shrink-0"></span>
+                              <span className="truncate">{item}</span>
                             </div>
                           ))}
                         </div>
                       </div>
-
-                      <div className="flex flex-wrap items-center gap-4">
-                        <a 
-                          className="inline-flex items-center gap-2 px-6 py-3 bg-[#050505] hover:bg-[#16A34A] text-white font-mono text-xs font-bold uppercase tracking-wider rounded-md transition-all duration-300 shadow-md group" 
-                          href="#contact"
-                        >
-                          <span>DISCUSS {srv.title}</span>
-                          <span className="material-symbols-outlined text-sm transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
-                        </a>
-                        <span className="text-xs font-mono text-black/40">SOVEREIGN ARCHITECTURE</span>
-                      </div>
                     </div>
 
-                    {/* Right: Service Visual Showcase */}
-                    <div className="lg:col-span-5 relative z-10 h-full flex items-center">
-                      <div className="relative overflow-hidden rounded-2xl group border border-black/10 shadow-lg w-full aspect-[4/3] bg-black/5">
+                    {/* Right / Middle Visual Banner (compact on mobile, spacious 4:3 on desktop) */}
+                    <div className="lg:col-span-5 relative z-10 w-full flex items-center">
+                      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl group border border-black/10 shadow-md w-full h-32 sm:h-44 lg:aspect-[4/3] lg:h-auto bg-black/5">
                         <img 
                           alt={srv.alt} 
                           className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-95 contrast-[1.08]"
@@ -1041,33 +1070,49 @@ export default function App() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
                         
-                        <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between text-white font-mono text-[11px]">
-                          <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/80 backdrop-blur-md rounded-lg border border-white/20 uppercase tracking-wider">
+                        <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white font-mono text-[10px] sm:text-[11px]">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-black/80 backdrop-blur-md rounded border border-white/20 uppercase tracking-wider">
                             <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] animate-pulse"></span>
-                            <span>VERHOST PRACTICE {srv.num}</span>
+                            <span>PRACTICE {srv.num}</span>
                           </div>
-                          <span className="text-white/70 text-[10px] uppercase font-bold">PRODUCTION GRADE</span>
+                          <span className="text-white/80 uppercase font-bold text-[9px] sm:text-[10px]">PRODUCTION GRADE</span>
                         </div>
                       </div>
                     </div>
+
                   </div>
+
+                  {/* Bottom Action Button */}
+                  <div className="flex items-center justify-between pt-2 border-t border-black/10 relative z-10">
+                    <a 
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#050505] hover:bg-[#16A34A] text-white font-mono text-xs font-bold uppercase tracking-wider rounded-md transition-all duration-300 shadow-md group" 
+                      href="#contact"
+                    >
+                      <span>DISCUSS {srv.title}</span>
+                      <span className="material-symbols-outlined text-sm transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
+                    </a>
+                    <span className="font-mono text-xs text-[#16A34A] font-bold">
+                      0{idx + 1} / 06
+                    </span>
+                  </div>
+
                 </div>
               ))}
             </div>
 
-            {/* Bottom Progress Bar & Scroll Indicator */}
-            <div className="w-full flex items-center justify-between text-xs font-mono text-black/50 pt-6 border-t border-black/10 mt-6">
+            {/* Bottom Progress Tracker */}
+            <div className="w-full flex items-center justify-between text-xs font-mono text-black/50 pt-3 border-t border-black/10 mt-2">
               <div className="flex items-center gap-3">
-                <div className="w-28 sm:w-44 h-1.5 bg-black/10 rounded-full overflow-hidden">
+                <div className="w-24 sm:w-44 h-1.5 bg-black/10 rounded-full overflow-hidden">
                   <div 
                     className="h-full bg-[#16A34A] transition-all duration-300"
                     style={{ width: `${((activeServiceIdx + 1) / 6) * 100}%` }}
                   ></div>
                 </div>
-                <span className="text-[#050505] font-bold">DISCIPLINE 0{activeServiceIdx + 1} OF 06</span>
+                <span className="text-[#050505] font-bold text-[11px] sm:text-xs">DISCIPLINE 0{activeServiceIdx + 1} OF 06</span>
               </div>
-              <div className="flex items-center gap-2 text-black/40">
-                <span className="hidden sm:inline">SCROLL TO ADVANCE DISCIPLINES</span>
+              <div className="flex items-center gap-1.5 text-black/40 text-[11px] sm:text-xs">
+                <span className="hidden sm:inline">SCROLL TO ADVANCE</span>
                 <span className="material-symbols-outlined text-sm text-[#16A34A] animate-bounce">south</span>
               </div>
             </div>

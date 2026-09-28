@@ -21,12 +21,12 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        sans: ['Butler', 'Georgia', 'serif'],
         display: ['Butler', 'Georgia', 'serif'],
         serif: ['Butler', 'Georgia', 'serif'],
         butler: ['Butler', 'Georgia', 'serif'],
-        mono: ['"Space Grotesk"', 'monospace'],
-        tech: ['"Space Grotesk"', 'sans-serif']
+        mono: ['Butler', 'Georgia', 'serif'],
+        tech: ['Butler', 'Georgia', 'serif']
       },
       letterSpacing: {
         'tightest': '-0.04em',

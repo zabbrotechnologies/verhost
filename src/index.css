@@ -57,21 +57,24 @@
     overflow-x: clip;
     background-color: #FAFAF7;
     color: #050505;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Butler', Georgia, 'Times New Roman', serif;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "tnum";
   }
 
   #root {
     width: 100%;
     max-width: 100%;
     overflow-x: clip;
+    font-family: 'Butler', Georgia, 'Times New Roman', serif;
+  }
+
+  h1, h2, h3, h4, h5, h6, p, span, a, div, button, input, textarea, select, label, code, pre, .font-mono, .font-tech, * {
+    font-family: 'Butler', Georgia, 'Times New Roman', serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Butler', Georgia, 'Times New Roman', serif;
     letter-spacing: -0.02em;
     font-weight: 700;
   }
@@ -79,12 +82,6 @@
   p {
     letter-spacing: -0.012em;
     line-height: 1.75;
-  }
-
-  /* Refined Mono Badges and Code with Space Grotesk */
-  code, kbd, samp, pre, .font-mono {
-    font-family: 'Space Grotesk', 'Inter', monospace;
-    letter-spacing: 0.04em;
   }
 }
 
