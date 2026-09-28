@@ -550,7 +550,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-[#050505] selection:bg-[#16A34A] selection:text-white font-sans antialiased">
+    <div className="min-h-screen bg-white text-[#050505] selection:bg-[#16A34A] selection:text-white font-sans antialiased w-full max-w-full overflow-x-hidden">
       
       {/* 1. WHITE LIQUID GLASS NAVIGATION BAR */}
       <header 
@@ -616,7 +616,7 @@ export default function App() {
 
         {/* Mobile Dropdown Menu in White Liquid Glass */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-black/10 bg-white/95 backdrop-blur-2xl px-6 py-6 flex flex-col space-y-3 font-mono text-xs font-bold uppercase tracking-wider text-[#050505] shadow-2xl">
+          <div id="mobile-nav-menu" className="lg:hidden border-t border-black/10 bg-white/95 backdrop-blur-2xl px-6 py-6 flex flex-col space-y-3 font-mono text-xs font-bold uppercase tracking-wider text-[#050505] shadow-2xl">
             <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#services" onClick={() => setMobileMenuOpen(false)}>SERVICES</a>
             <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#solutions" onClick={() => setMobileMenuOpen(false)}>SOLUTIONS</a>
             <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#capabilities" onClick={() => setMobileMenuOpen(false)}>CAPABILITIES</a>
