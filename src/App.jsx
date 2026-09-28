@@ -9,6 +9,7 @@ export default function App() {
   const heroBgRef = useRef(null);
   const heroContentRef = useRef(null);
   const vhWatermarkRef = useRef(null);
+  const servicesScrollTriggerRef = useRef(null);
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -20,6 +21,14 @@ export default function App() {
   const [activeHeroTab, setActiveHeroTab] = useState(0);
   const [reelModalOpen, setReelModalOpen] = useState(false);
   const [activeServiceIdx, setActiveServiceIdx] = useState(0);
+
+  const scrollToService = (index) => {
+    if (servicesScrollTriggerRef.current) {
+      const st = servicesScrollTriggerRef.current;
+      const targetScroll = st.start + (st.end - st.start) * (index / 5);
+      window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    }
+  };
   
   const [formData, setFormData] = useState({
     name: '',
@@ -364,26 +373,52 @@ export default function App() {
         scrollTrigger: { trigger: '#approach-pillars', start: 'top 85%', toggleActions: 'play none none none' }
       });
 
-      // ─── SERVICES SECTION: Header reveal ────────────────────────────────────
-      gsap.from('#services-header', {
-        opacity: 0, y: 40, duration: 1, ease: 'power3.out',
-        scrollTrigger: { trigger: '#services', start: 'top 85%', toggleActions: 'play none none none' }
-      });
-
-      // Smooth reveal for each stacking service card as user scrolls down
-      gsap.utils.toArray('.service-panel-card').forEach((card) => {
-        gsap.from(card, {
-          opacity: 0,
-          y: 40,
-          duration: 0.8,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: card,
-            start: 'top 88%',
-            toggleActions: 'play none none none'
+      // ─── SERVICES ONE-BY-ONE PINNED SCROLLING ─────────────────────────────────
+      const serviceCards = gsap.utils.toArray('.service-deck-card');
+      if (serviceCards.length > 0) {
+        // Initialize initial card states
+        serviceCards.forEach((card, idx) => {
+          if (idx === 0) {
+            gsap.set(card, { yPercent: 0, opacity: 1, scale: 1 });
+          } else {
+            gsap.set(card, { yPercent: 120, opacity: 0, scale: 0.94 });
           }
         });
-      });
+
+        // Master pinned scrub timeline for 1-by-1 card revelation
+        const servicesTL = gsap.timeline({
+          scrollTrigger: {
+            trigger: '#services',
+            start: 'top top',
+            end: () => `+=${window.innerHeight * 4}`,
+            pin: true,
+            scrub: 0.8,
+            anticipatePin: 1,
+            onUpdate: (self) => {
+              const idx = Math.min(5, Math.floor(self.progress * 6));
+              setActiveServiceIdx(idx);
+            }
+          }
+        });
+
+        servicesScrollTriggerRef.current = servicesTL.scrollTrigger;
+
+        // Build sequential transitions for cards 1 through 5
+        for (let i = 1; i < serviceCards.length; i++) {
+          servicesTL
+            .to(serviceCards[i - 1], {
+              scale: 0.94,
+              opacity: 0.35,
+              duration: 1,
+              ease: 'power1.inOut'
+            }, `step-${i}`)
+            .fromTo(serviceCards[i],
+              { yPercent: 120, opacity: 0, scale: 0.94 },
+              { yPercent: 0, opacity: 1, scale: 1, duration: 1, ease: 'power1.inOut' },
+              `step-${i}`
+            );
+        }
+      }
 
       // ─── TRANSITION STATEMENT: Editorial text scrub ─────────────────────────
       gsap.fromTo('.editorial-reveal-line',
@@ -885,19 +920,26 @@ export default function App() {
           </div>
         </section>
 
-        {/* 4. SERVICES — ANIMATED ONE-BY-ONE STACKING SHOWCASE */}
-        <section id="services" className="relative w-full bg-[#FAFAF7] px-6 sm:px-10 lg:px-16 py-28 sm:py-36 border-b border-black/10">
-          <div className="max-w-[1360px] mx-auto w-full">
+        {/* 4. SERVICES — ANIMATED ONE-BY-ONE PINNED SHOWCASE */}
+        <section id="services" className="relative w-full bg-[#FAFAF7] border-b border-black/10 overflow-hidden">
+          <div className="max-w-[1360px] mx-auto w-full px-6 sm:px-10 lg:px-16 py-16 sm:py-20 min-h-screen flex flex-col justify-between">
             
-            {/* Header with Title (Pill buttons removed as requested) */}
-            <div id="services-header" className="w-full pb-10 sm:pb-14 border-b border-black/10 mb-12 sm:mb-16">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHAT WE DO</span>
-                <span className="text-black/30 font-mono text-xs">/</span>
-                <span className="text-black/60 font-mono text-xs uppercase tracking-wider">06 CORE DISCIPLINES</span>
+            {/* Header with Title + 6 Practice Progress Tabs */}
+            <div id="services-header" className="w-full pb-6 sm:pb-8 border-b border-black/10 mb-6 sm:mb-8">
+              <div className="flex flex-wrap items-center justify-between gap-4 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHAT WE DO</span>
+                  <span className="text-black/30 font-mono text-xs">/</span>
+                  <span className="text-black/60 font-mono text-xs uppercase tracking-wider">06 CORE DISCIPLINES</span>
+                </div>
+                <div className="flex items-center gap-2 font-mono text-xs">
+                  <span className="text-black/40">ACTIVE:</span>
+                  <span className="text-[#16A34A] font-bold">0{activeServiceIdx + 1} / 06</span>
+                </div>
               </div>
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6">
                 <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] max-w-3xl leading-[1.02]">
                   TECHNOLOGY BUILT AROUND YOUR BUSINESS.
                 </h2>
@@ -905,21 +947,38 @@ export default function App() {
                   Each discipline is engineered to operate autonomously or integrate into a unified, high-margin enterprise engine.
                 </p>
               </div>
+
+              {/* 6 Interactive Discipline Navigation Pills */}
+              <div className="flex flex-wrap items-center gap-2 pt-2">
+                {services.map((srv, idx) => {
+                  const isCurrent = activeServiceIdx === idx;
+                  return (
+                    <button
+                      key={srv.num}
+                      type="button"
+                      onClick={() => scrollToService(idx)}
+                      className={`px-3.5 py-1.5 rounded-full font-mono text-[11px] font-bold transition-all duration-300 uppercase cursor-pointer ${
+                        isCurrent 
+                          ? 'bg-[#16A34A] text-white shadow-md scale-105' 
+                          : 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10'
+                      }`}
+                    >
+                      {srv.num} {srv.title.split(' ')[0]}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            {/* Stacking Cards Deck (Smooth scroll down and up, zero pin spacer bugs) */}
-            <div className="relative space-y-12 sm:space-y-16">
+            {/* Pinned Card Deck Stage: 6 Cards animate 1-by-1 */}
+            <div className="relative w-full h-[540px] sm:h-[580px] lg:h-[520px]">
               {services.map((srv, idx) => (
                 <div
                   key={srv.num}
-                  className="service-panel-card sticky rounded-3xl border border-black/10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] bg-white overflow-hidden will-change-transform"
-                  style={{
-                    top: `${84 + idx * 16}px`,
-                    zIndex: idx + 1
-                  }}
+                  className="service-deck-card absolute inset-0 rounded-3xl border border-black/10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] bg-white overflow-hidden will-change-transform flex flex-col justify-center"
+                  style={{ zIndex: idx + 5 }}
                 >
-                  {/* Card Content Grid (Top header bar removed as requested) */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-6 sm:p-10 lg:p-12 relative overflow-hidden">
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center p-6 sm:p-10 lg:p-12 relative overflow-hidden h-full">
                     {/* Watermark Number in Butler Serif */}
                     <span className="absolute -bottom-8 -right-4 font-display font-bold text-[140px] sm:text-[220px] text-black/[0.03] select-none pointer-events-none leading-none">
                       {srv.num}
@@ -945,11 +1004,11 @@ export default function App() {
                       </p>
 
                       {/* Deliverables */}
-                      <div className="mb-8 pt-4 border-t border-black/10">
+                      <div className="mb-6 pt-4 border-t border-black/10">
                         <div className="text-[11px] font-mono font-bold uppercase tracking-widest text-black/50 mb-3">
                           CORE DELIVERABLES &amp; CAPABILITIES
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-mono text-black/80">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-black/80">
                           {srv.deliverables.map((item, dIdx) => (
                             <div key={dIdx} className="flex items-center gap-2">
                               <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]"></span>
@@ -996,15 +1055,20 @@ export default function App() {
               ))}
             </div>
 
-            {/* Bottom Status Indicator */}
-            <div className="w-full flex items-center justify-between text-xs font-mono text-black/50 pt-10 border-t border-black/10 mt-12">
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
-                <span className="text-[#050505] font-bold">06 PRACTICES &mdash; FULL ARCHITECTURAL SUITE</span>
+            {/* Bottom Progress Bar & Scroll Indicator */}
+            <div className="w-full flex items-center justify-between text-xs font-mono text-black/50 pt-6 border-t border-black/10 mt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-28 sm:w-44 h-1.5 bg-black/10 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-[#16A34A] transition-all duration-300"
+                    style={{ width: `${((activeServiceIdx + 1) / 6) * 100}%` }}
+                  ></div>
+                </div>
+                <span className="text-[#050505] font-bold">DISCIPLINE 0{activeServiceIdx + 1} OF 06</span>
               </div>
               <div className="flex items-center gap-2 text-black/40">
-                <span className="hidden sm:inline">CONTINUE SCROLLING</span>
-                <span className="material-symbols-outlined text-sm text-[#16A34A]">south</span>
+                <span className="hidden sm:inline">SCROLL TO ADVANCE DISCIPLINES</span>
+                <span className="material-symbols-outlined text-sm text-[#16A34A] animate-bounce">south</span>
               </div>
             </div>
 

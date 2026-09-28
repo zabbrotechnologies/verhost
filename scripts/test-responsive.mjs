@@ -51,8 +51,8 @@ async function runTests() {
       networkFailures.push({ vp: vp.name, url, error: request.failure()?.errorText });
     });
 
-    await page.goto('http://localhost:5173/', { waitUntil: 'networkidle', timeout: 30000 });
-    await page.waitForTimeout(600);
+    await page.goto('http://localhost:5174/', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await page.waitForTimeout(1000);
 
     // 1. Check Horizontal Overflow (User cannot horizontally scroll and doc does not expand beyond viewport)
     const overflowData = await page.evaluate(() => {
