@@ -1151,88 +1151,59 @@ export default function App() {
               </p>
             </div>
 
-            {/* Mobile / Tablet Visual Preview (visible on smaller screens) */}
-            <div className="block lg:hidden mb-8 rounded-2xl overflow-hidden border border-black/10 shadow-md bg-black aspect-[16/10] relative">
-              <img 
-                alt={`VERHOST ${capabilities[activeCapability].tag}`}
-                className="w-full h-full object-cover transition-all duration-500 filter contrast-[1.1]"
-                src={capabilities[activeCapability].image}
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-              <div className="absolute bottom-4 left-4 right-4 text-white font-mono text-xs">
-                <div className="text-[#19C763] font-bold uppercase tracking-wider mb-1">
-                  0{activeCapability + 1} &bull; {capabilities[activeCapability].tag}
-                </div>
-                <div className="font-display font-bold text-base uppercase text-white">
-                  {capabilities[activeCapability].headline}
-                </div>
-              </div>
-            </div>
+            {/* Interactive Massive Typography List (Full Width, No Images) */}
+            <div id="capabilities-list" className="w-full divide-y divide-black/10 border-y border-black/10">
+              {capabilities.map((cap, idx) => {
+                const isActive = activeCapability === idx;
+                return (
+                  <div 
+                    key={cap.tag}
+                    onMouseEnter={() => setActiveCapability(idx)}
+                    onClick={() => setActiveCapability(idx)}
+                    className={`capability-row py-8 sm:py-12 transition-all duration-300 cursor-pointer ${
+                      isActive ? 'bg-white px-6 sm:px-10 -mx-6 sm:-mx-10 rounded-xl shadow-sm border-l-4 border-l-[#16A34A]' : 'hover:bg-black/[0.02]'
+                    }`}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-center justify-between">
+                      {/* Left: Number & Massive Butler Typography */}
+                      <div className="md:col-span-5 flex items-baseline gap-5 sm:gap-8">
+                        <span className={`font-mono text-sm sm:text-base font-bold transition-colors ${isActive ? 'text-[#16A34A]' : 'text-black/40'}`}>
+                          0{idx + 1}
+                        </span>
+                        <h3 className={`font-display font-bold text-4xl sm:text-6xl lg:text-7xl uppercase tracking-tighter transition-all duration-300 ${
+                          isActive ? 'text-[#16A34A] scale-[1.02] origin-left' : 'text-[#050505]'
+                        }`}>
+                          {cap.tag}
+                        </h3>
+                      </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-              
-              {/* Interactive Massive Typography List */}
-              <div id="capabilities-list" className="lg:col-span-8 divide-y divide-black/10 border-y border-black/10">
-                {capabilities.map((cap, idx) => {
-                  const isActive = activeCapability === idx;
-                  return (
-                    <div 
-                      key={cap.tag}
-                      onMouseEnter={() => setActiveCapability(idx)}
-                      onClick={() => setActiveCapability(idx)}
-                      className={`capability-row py-8 sm:py-10 transition-all duration-300 cursor-pointer ${
-                        isActive ? 'bg-white px-6 -mx-6 rounded-xl shadow-sm border-l-4 border-l-[#16A34A]' : 'hover:bg-black/[0.02]'
-                      }`}
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4">
-                        <div className="flex items-baseline gap-4">
-                          <span className={`font-mono text-xs font-bold transition-colors ${isActive ? 'text-[#16A34A]' : 'text-black/40'}`}>
-                            0{idx + 1}
-                          </span>
-                          <h3 className={`font-display font-bold text-4xl sm:text-6xl uppercase tracking-tighter transition-all duration-300 ${
-                            isActive ? 'text-[#16A34A] scale-[1.02] origin-left' : 'text-[#050505]'
-                          }`}>
-                            {cap.tag}
-                          </h3>
-                        </div>
+                      {/* Middle: Headline & Detailed Description */}
+                      <div className="md:col-span-5">
+                        <p className="font-display font-bold text-base sm:text-lg text-[#050505] mb-2 uppercase tracking-tight">
+                          {cap.headline}
+                        </p>
+                        <p className="text-xs sm:text-sm text-black/65 leading-relaxed font-sans">
+                          {cap.detail}
+                        </p>
+                      </div>
 
-                        <div className="max-w-xs">
-                          <p className="font-display font-bold text-sm sm:text-base text-[#050505] mb-1 uppercase">
-                            {cap.headline}
-                          </p>
-                          <p className="text-xs text-black/60 leading-relaxed font-sans">
-                            {cap.detail}
-                          </p>
-                        </div>
+                      {/* Right: Verified Metric & Arrow Indicator */}
+                      <div className="md:col-span-2 flex items-center justify-between md:justify-end gap-4">
+                        <span className={`inline-block px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider rounded border transition-colors ${
+                          isActive ? 'bg-[#16A34A]/10 text-[#16A34A] border-[#16A34A]/30' : 'bg-black/5 text-black/60 border-black/5'
+                        }`}>
+                          {cap.metric}
+                        </span>
+                        <span className={`material-symbols-outlined text-lg transition-transform duration-300 ${
+                          isActive ? 'text-[#16A34A] translate-x-1' : 'text-black/30'
+                        }`}>
+                          arrow_forward
+                        </span>
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Dynamic Sticky Visual Preview on Desktop */}
-              <div className="hidden lg:block lg:col-span-4 sticky top-28">
-                <div className="rounded-2xl overflow-hidden border border-black/10 shadow-lg bg-black aspect-[4/3] relative group">
-                  <img 
-                    alt={`VERHOST ${capabilities[activeCapability].tag} Capability Architecture`}
-                    className="w-full h-full object-cover transition-all duration-500 filter contrast-[1.1]"
-                    src={capabilities[activeCapability].image}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent"></div>
-                  <div className="absolute bottom-5 left-5 right-5 text-white font-mono text-xs">
-                    <div className="text-[#19C763] font-bold uppercase tracking-wider mb-1">
-                      PRACTICE 0{activeCapability + 1} ARCHITECTURE
-                    </div>
-                    <div className="font-display font-bold text-xl uppercase text-white mb-1">
-                      {capabilities[activeCapability].tag}
-                    </div>
-                    <div className="text-white/80 font-sans text-xs">
-                      {capabilities[activeCapability].headline}
-                    </div>
                   </div>
-                </div>
-              </div>
-
+                );
+              })}
             </div>
 
           </div>
