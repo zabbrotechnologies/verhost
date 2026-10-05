@@ -90,57 +90,57 @@ export default function App() {
   const services = [
     {
       num: '01',
-      title: 'WEB DEVELOPMENT',
+      title: 'DIGITAL PRESENCE',
       tagline: 'Build your digital presence.',
-      description: 'High-performance digital flagship platforms, web applications, and headless architectures engineered with microsecond latency, fluid interaction, and enterprise-grade reliability.',
-      deliverables: ['Custom Web Applications', 'Headless & Modular Architectures', 'Next.js & React Engineering', 'Design Systems & Interactive 3D'],
+      description: 'Premium websites, web applications, and digital experiences engineered to make your business visible, credible, and conversion-ready.',
+      deliverables: ['Business Websites', 'Web Applications', 'E-commerce Platforms', 'Interactive Digital Experiences'],
       image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST Web Development — High-performance web architecture and digital platforms'
+      alt: 'VERHOST Digital Presence — Premium websites and digital experiences'
     },
     {
       num: '02',
-      title: 'AI & MACHINE LEARNING',
-      tagline: 'Intelligence for real-world decisions.',
-      description: 'Proprietary predictive models, computer vision systems, and automated machine learning pipelines tailored to extract actionable foresight from complex enterprise data assets.',
-      deliverables: ['Predictive Forecasting Models', 'Custom Neural Networks', 'Computer Vision (OpenCV / YOLO)', 'MLOps & Autonomous Model Pipelines'],
+      title: 'INTELLIGENT SOLUTIONS',
+      tagline: 'Turn AI into business capability.',
+      description: 'AI and machine-learning systems designed to solve real operational problems, automate decisions, and uncover predictive intelligence.',
+      deliverables: ['Predictive AI', 'Computer Vision', 'Custom ML Models', 'AI-Powered Applications'],
       image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST AI & Machine Learning — Neural network modeling and predictive intelligence'
+      alt: 'VERHOST Intelligent Solutions — AI and machine-learning systems'
     },
     {
       num: '03',
-      title: 'DATA ANALYTICS',
-      tagline: 'Turn information into insight.',
-      description: 'End-to-end telemetry, enterprise data warehouse pipelines, and executive intelligence dashboards that convert fragmented operational metrics into decisive business momentum.',
-      deliverables: ['Real-Time Telemetry & Dashboards', 'Power BI & Custom Visualizations', 'Warehouse Pipelines (SQL / PostgreSQL)', 'Automated Anomaly Detection'],
+      title: 'BUSINESS INTELLIGENCE',
+      tagline: 'Turn your data into decisions.',
+      description: 'Transform fragmented business data into clear dashboards, actionable insights, and intelligent reporting systems.',
+      deliverables: ['Business Dashboards', 'Power BI Solutions', 'Data Pipelines', 'Automated Insights'],
       image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST Data Analytics — Real-time telemetry and enterprise business intelligence'
+      alt: 'VERHOST Business Intelligence — Dashboards and actionable insights'
     },
     {
       num: '04',
-      title: 'AI CHATBOTS',
-      tagline: 'Conversations that work 24/7.',
-      description: 'Context-aware autonomous conversational AI agents powered by state-of-the-art LLMs, grounded in company knowledge, executing workflows, and solving customer inquiries around the clock.',
-      deliverables: ['Enterprise LLM Fine-Tuning & RAG', 'Omnichannel Customer Support Agents', 'Internal Knowledge Copilots', 'Multi-Language Conversational AI'],
+      title: 'AI CONVERSATIONS',
+      tagline: 'Let your business communicate 24/7.',
+      description: 'Intelligent conversational systems that understand customers, access your business knowledge, and handle conversations across digital channels.',
+      deliverables: ['AI Chatbots', 'Knowledge Assistants', 'Customer Support Agents', 'Multilingual AI'],
       image: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST AI Chatbots — Autonomous conversational AI and LLM agents'
+      alt: 'VERHOST AI Conversations — Intelligent conversational systems'
     },
     {
       num: '05',
-      title: 'PROMOTION ADS',
-      tagline: 'Creative that gets attention.',
-      description: 'High-conversion algorithmic ad creatives, motion design, and precision video formats designed to capture mindshare, accelerate acquisition, and command brand authority.',
-      deliverables: ['High-Conversion Motion Ads', 'Algorithmic Dynamic Creatives', 'Omnichannel Performance Assets', 'Product Showcase Visuals'],
+      title: 'GROWTH CREATIVE',
+      tagline: 'Create attention. Drive action.',
+      description: 'High-impact advertising creatives engineered for modern digital platforms, helping businesses communicate their value and reach customers effectively.',
+      deliverables: ['Promotional Videos', 'Social Media Ads', 'Product Ads', 'Campaign Creatives'],
       image: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST Promotion Ads — High-conversion digital advertising and creative campaigns'
+      alt: 'VERHOST Growth Creative — High-impact advertising creatives'
     },
     {
       num: '06',
-      title: 'POSTERS & CREATIVE DESIGN',
-      tagline: 'Visual communication built for brands.',
-      description: 'Editorial brand identities, Swiss-inspired typographic systems, and bespoke marketing collateral crafted to communicate uncompromising technical excellence and institutional trust.',
-      deliverables: ['Editorial Identity Systems', 'Architectural Typography Systems', 'High-Impact Brand Collateral', 'Digital & Print Exhibition Systems'],
+      title: 'BRAND COMMUNICATION',
+      tagline: 'Make your brand impossible to overlook.',
+      description: 'Strategic visual communication that gives businesses a consistent, professional, and memorable identity across digital and physical touchpoints.',
+      deliverables: ['Posters & Marketing Creatives', 'Brand Identity', 'Social Media Designs', 'Digital & Print Collateral'],
       image: 'https://images.unsplash.com/photo-1509343256512-d77a5cb3791b?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST Creative Design — Editorial identity and architectural visual communication'
+      alt: 'VERHOST Brand Communication — Strategic visual communication and identity'
     }
   ];
 
@@ -390,7 +390,7 @@ export default function App() {
           scrollTrigger: {
             trigger: '#services',
             start: 'top top',
-            end: () => `+=${window.innerHeight * 4}`,
+            end: () => `+=${window.innerHeight * 8}`,
             pin: true,
             scrub: 0.8,
             anticipatePin: 1,
@@ -406,6 +406,8 @@ export default function App() {
         // Build sequential transitions for cards 1 through 5
         for (let i = 1; i < serviceCards.length; i++) {
           servicesTL
+            .to({}, { duration: 1 }) // Dummy tween creates a scrolling pause so the current card is fully readable
+            .add(`step-${i}`)
             .to(serviceCards[i - 1], {
               scale: 0.94,
               opacity: 0.35,
@@ -418,6 +420,7 @@ export default function App() {
               `step-${i}`
             );
         }
+        servicesTL.to({}, { duration: 1 }); // Final pause before unpinning
       }
 
       // ─── TRANSITION STATEMENT: Editorial text scrub ─────────────────────────
@@ -920,9 +923,9 @@ export default function App() {
           </div>
         </section>
 
-        {/* 4. SERVICES — ANIMATED ONE-BY-ONE PINNED SHOWCASE */}
-        <section id="services" className="relative w-full bg-[#FAFAF7] border-b border-black/10 overflow-hidden">
-          <div className="max-w-[1360px] mx-auto w-full px-4 sm:px-8 lg:px-16 pt-20 pb-4 sm:py-16 lg:py-20 min-h-[100dvh] flex flex-col justify-between">
+        {/* 4. SERVICES — HEADER */}
+        <section className="relative w-full bg-[#FAFAF7] overflow-hidden">
+          <div className="max-w-[1360px] mx-auto w-full px-4 sm:px-8 lg:px-16 pt-20 pb-4 sm:pt-24 lg:pt-28">
             
             {/* ─── DESKTOP HEADER (lg and up) ─── */}
             <div id="services-header" className="hidden lg:block w-full pb-6 border-b border-black/10 mb-6">
@@ -1003,9 +1006,14 @@ export default function App() {
                 })}
               </div>
             </div>
+          </div>
+        </section>
 
+        {/* 4.1 SERVICES — ANIMATED ONE-BY-ONE PINNED SHOWCASE */}
+        <section id="services" className="relative w-full bg-[#FAFAF7] border-b border-black/10 overflow-hidden pb-10">
+          <div className="max-w-[1360px] mx-auto w-full px-4 sm:px-8 lg:px-16 h-[100dvh] flex flex-col justify-center">
             {/* Pinned Card Deck Stage: Full Screen Adaptive Height */}
-            <div className="relative w-full h-[calc(100dvh-175px)] min-h-[480px] max-h-[640px] lg:h-[500px]">
+            <div className="relative w-full h-[90dvh] min-h-[500px]">
               {services.map((srv, idx) => (
                 <div
                   key={srv.num}
