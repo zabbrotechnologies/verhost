@@ -9,7 +9,6 @@ export default function App() {
   const heroBgRef = useRef(null);
   const heroContentRef = useRef(null);
   const vhWatermarkRef = useRef(null);
-  const servicesScrollTriggerRef = useRef(null);
 
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -21,12 +20,230 @@ export default function App() {
   const [activeHeroTab, setActiveHeroTab] = useState(0);
   const [reelModalOpen, setReelModalOpen] = useState(false);
   const [activeServiceIdx, setActiveServiceIdx] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(() => typeof window !== 'undefined' ? window.matchMedia('(prefers-reduced-motion: reduce)').matches : false);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const mouseStartX = useRef(0);
+  const isMouseDown = useRef(false);
+  const hasMouseDragged = useRef(false);
+  const lastWheelTime = useRef(0);
+  const navDirectionRef = useRef('next');
+
+  // ─── 3D Rotating Ribbon Carousel for Methodology ─────────────────────────
+  const [ribbonRotation, setRibbonRotation] = useState(0);
+  const ribbonRotationRef = useRef(0);
+  const isRibbonDragging = useRef(false);
+  const ribbonStartX = useRef(0);
+  const ribbonStartRotation = useRef(0);
+  const isRibbonHovered = useRef(false);
+  const targetRibbonRotation = useRef(null);
+  const ribbonAnimFrame = useRef(null);
+  const [activeMethodologyPhase, setActiveMethodologyPhase] = useState(0);
+
+  // Ribbon Continuous Rotation & Physics Loop
+  useEffect(() => {
+    let lastTime = performance.now();
+
+    const loop = (time) => {
+      const dt = Math.min(50, time - lastTime);
+      lastTime = time;
+
+      if (targetRibbonRotation.current !== null) {
+        const diff = targetRibbonRotation.current - ribbonRotationRef.current;
+        if (Math.abs(diff) < 0.15) {
+          ribbonRotationRef.current = targetRibbonRotation.current;
+          targetRibbonRotation.current = null;
+        } else {
+          ribbonRotationRef.current += diff * 0.12;
+        }
+      } else if (!isRibbonDragging.current) {
+        // Continuous smooth auto-rotation (~0.13 deg per frame at 60fps)
+        const speed = isRibbonHovered.current ? 0.04 : 0.13;
+        ribbonRotationRef.current = (ribbonRotationRef.current + speed * (dt / 16.666)) % 360;
+      }
+
+      setRibbonRotation(ribbonRotationRef.current);
+
+      // Compute active phase (4 phases, each spans 90 degrees)
+      const norm = ((ribbonRotationRef.current % 360) + 360) % 360;
+      const computedPhase = Math.floor((360 - norm + 45) / 90) % 4;
+      setActiveMethodologyPhase(computedPhase);
+
+      ribbonAnimFrame.current = requestAnimationFrame(loop);
+    };
+
+    ribbonAnimFrame.current = requestAnimationFrame(loop);
+    return () => {
+      if (ribbonAnimFrame.current) cancelAnimationFrame(ribbonAnimFrame.current);
+    };
+  }, []);
+
+  const handleRibbonMouseDown = (e) => {
+    isRibbonDragging.current = true;
+    ribbonStartX.current = e.clientX;
+    ribbonStartRotation.current = ribbonRotationRef.current;
+    targetRibbonRotation.current = null;
+  };
+
+  const handleRibbonMouseMove = (e) => {
+    if (!isRibbonDragging.current) return;
+    const deltaX = e.clientX - ribbonStartX.current;
+    ribbonRotationRef.current = (ribbonStartRotation.current - deltaX * 0.28) % 360;
+  };
+
+  const handleRibbonMouseUp = () => {
+    isRibbonDragging.current = false;
+  };
+
+  const handleRibbonTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      isRibbonDragging.current = true;
+      ribbonStartX.current = e.touches[0].clientX;
+      ribbonStartRotation.current = ribbonRotationRef.current;
+      targetRibbonRotation.current = null;
+    }
+  };
+
+  const handleRibbonTouchMove = (e) => {
+    if (!isRibbonDragging.current || e.touches.length !== 1) return;
+    const deltaX = e.touches[0].clientX - ribbonStartX.current;
+    ribbonRotationRef.current = (ribbonStartRotation.current - deltaX * 0.32) % 360;
+  };
+
+  const handleRibbonTouchEnd = () => {
+    isRibbonDragging.current = false;
+  };
+
+  const rotateToPhase = (phaseIdx) => {
+    const targetDeg = -(phaseIdx * 90);
+    const current = ribbonRotationRef.current;
+    const diff = ((((targetDeg - current) % 360) + 540) % 360) - 180;
+    targetRibbonRotation.current = current + diff;
+  };
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', checkMobile);
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const motionHandler = (e) => setPrefersReducedMotion(e.matches);
+    mediaQuery.addEventListener('change', motionHandler);
+
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      mediaQuery.removeEventListener('change', motionHandler);
+    };
+  }, []);
+
+  const goToPrevService = () => {
+    navDirectionRef.current = 'prev';
+    setActiveServiceIdx((prev) => (prev > 0 ? prev - 1 : services.length - 1));
+  };
+
+  const goToNextService = () => {
+    navDirectionRef.current = 'next';
+    setActiveServiceIdx((prev) => (prev < services.length - 1 ? prev + 1 : 0));
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+  };
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX.current;
+    if (diff > 45) {
+      goToNextService();
+    } else if (diff < -45) {
+      goToPrevService();
+    }
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return;
+    isMouseDown.current = true;
+    hasMouseDragged.current = false;
+    mouseStartX.current = e.clientX;
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isMouseDown.current) return;
+    const diff = mouseStartX.current - e.clientX;
+    if (Math.abs(diff) > 8) {
+      hasMouseDragged.current = true;
+    }
+  };
+
+  const handleMouseUp = (e) => {
+    if (!isMouseDown.current) return;
+    isMouseDown.current = false;
+    const diff = mouseStartX.current - e.clientX;
+    if (diff > 45) {
+      goToNextService();
+    } else if (diff < -45) {
+      goToPrevService();
+    }
+    setTimeout(() => {
+      hasMouseDragged.current = false;
+    }, 60);
+  };
+
+  const handleMouseLeave = () => {
+    if (isMouseDown.current) {
+      isMouseDown.current = false;
+      setTimeout(() => {
+        hasMouseDragged.current = false;
+      }, 60);
+    }
+  };
+
+  const handleWheel = (e) => {
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
+    if (Math.abs(delta) > 35) {
+      const now = Date.now();
+      if (now - lastWheelTime.current > 420) {
+        lastWheelTime.current = now;
+        if (delta > 0) {
+          goToNextService();
+        } else {
+          goToPrevService();
+        }
+      }
+    }
+  };
+
+  const handleCarouselKeyDown = (e) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      goToPrevService();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      goToNextService();
+    }
+  };
+
+  const getCardOffset = (idx, current) => {
+    let diff = (idx - current) % 6;
+    if (diff < -3) diff += 6;
+    if (diff > 3) diff -= 6;
+    // Tie-breaker for the 6th card (diff 3 / -3) to maintain consistent slide direction
+    if (diff === 3 || diff === -3) {
+      diff = navDirectionRef.current === 'next' ? -3 : 3;
+    }
+    return diff;
+  };
 
   const scrollToService = (index) => {
-    if (servicesScrollTriggerRef.current) {
-      const st = servicesScrollTriggerRef.current;
-      const targetScroll = st.start + (st.end - st.start) * (index / 5);
-      window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+    if (index !== activeServiceIdx) {
+      navDirectionRef.current = index > activeServiceIdx ? 'next' : 'prev';
+      setActiveServiceIdx(index);
+    }
+    const el = document.getElementById('services');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
     }
   };
   
@@ -266,15 +483,90 @@ export default function App() {
     }
   ];
 
-  // Process Steps
-  const processSteps = [
-    { num: '01', name: 'DISCOVER', desc: 'In-depth architectural immersion, stakeholder alignment, and data auditing to define unambiguous objectives.' },
-    { num: '02', name: 'DEFINE', desc: 'System blueprints, user journeys, data schemas, and mathematical performance criteria locked in with total precision.' },
-    { num: '03', name: 'DESIGN', desc: 'High-fidelity art direction, interactive prototypes, and typographic systems engineered for maximum conversion.' },
-    { num: '04', name: 'BUILD', desc: 'Full-stack engineering, clean modular codebases, custom neural models, and secure cloud infrastructure.' },
-    { num: '05', name: 'LAUNCH', desc: 'Comprehensive stress testing, zero-downtime deployment, DNS provisioning, and telemetry verification.' },
-    { num: '06', name: 'GROW', desc: 'Continuous telemetry monitoring, algorithmic optimization, and proactive capability scaling.' }
+  // Methodology Showcase Cards matching reference image
+  const methodologyCards = [
+    {
+      id: 'citrus',
+      title: 'Beverage Architecture & Citrus Sky',
+      category: 'Brand Systems',
+      image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'apparel',
+      title: 'Haute Couture Product Engineering',
+      category: 'Physical Merchandising',
+      image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'volcanic',
+      title: '3D Generative Product Assets',
+      category: 'Creative Computation',
+      image: 'https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'can',
+      title: 'Sustainable Minimalist Packaging',
+      category: 'Industrial Systems',
+      image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'streetwear',
+      title: 'Editorial Lookbooks & Visual Direction',
+      category: 'Art Direction',
+      image: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'tote',
+      title: 'Botanical Retail Merchandising',
+      category: 'Eco Merchandising',
+      image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'berry',
+      title: 'High-Speed Product Dynamic CGI',
+      category: 'Motion Systems',
+      image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?q=80&w=800&auto=format&fit=crop'
+    },
+    {
+      id: 'architecture',
+      title: 'Sovereign Cloud Platform Infrastructure',
+      category: 'Enterprise Cloud',
+      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop'
+    }
   ];
+
+  // 24 cards (3 dense repeats of 8 items) for seamless, continuous 360-degree cylindrical ribbon
+  const denseMethodologyCards = [
+    ...methodologyCards,
+    ...methodologyCards,
+    ...methodologyCards
+  ];
+
+  const methodologyPhases = [
+    {
+      num: '#01',
+      title: 'Strategy & Planning',
+      desc: 'Discovery immersion, architecture blueprints, data auditing, and unambiguous KPIs.'
+    },
+    {
+      num: '#02',
+      title: 'Design & Development',
+      desc: 'High-fidelity prototyping, full-stack systems engineering, and custom AI model pipelines.'
+    },
+    {
+      num: '#03',
+      title: 'Launch & Growth',
+      desc: 'Zero-downtime deployment, DNS provisioning, performance telemetry, and conversion velocity.'
+    },
+    {
+      num: '#04',
+      title: 'Ongoing Support',
+      desc: 'Continuous telemetry monitoring, algorithmic optimization, 24/7 SLAs, and capability scaling.'
+    }
+  ];
+
+  // Legacy reference for backward compatibility
+  const processSteps = methodologyPhases;
 
   // FAQs
   const faqs = [
@@ -373,55 +665,11 @@ export default function App() {
         scrollTrigger: { trigger: '#approach-pillars', start: 'top 85%', toggleActions: 'play none none none' }
       });
 
-      // ─── SERVICES ONE-BY-ONE PINNED SCROLLING ─────────────────────────────────
-      const serviceCards = gsap.utils.toArray('.service-deck-card');
-      if (serviceCards.length > 0) {
-        // Initialize initial card states
-        serviceCards.forEach((card, idx) => {
-          if (idx === 0) {
-            gsap.set(card, { yPercent: 0, opacity: 1, scale: 1 });
-          } else {
-            gsap.set(card, { yPercent: 120, opacity: 0, scale: 0.94 });
-          }
-        });
-
-        // Master pinned scrub timeline for 1-by-1 card revelation
-        const servicesTL = gsap.timeline({
-          scrollTrigger: {
-            trigger: '#services',
-            start: 'top top',
-            end: () => `+=${window.innerHeight * 8}`,
-            pin: true,
-            scrub: 0.8,
-            anticipatePin: 1,
-            onUpdate: (self) => {
-              const idx = Math.min(5, Math.floor(self.progress * 6));
-              setActiveServiceIdx(idx);
-            }
-          }
-        });
-
-        servicesScrollTriggerRef.current = servicesTL.scrollTrigger;
-
-        // Build sequential transitions for cards 1 through 5
-        for (let i = 1; i < serviceCards.length; i++) {
-          servicesTL
-            .to({}, { duration: 1 }) // Dummy tween creates a scrolling pause so the current card is fully readable
-            .add(`step-${i}`)
-            .to(serviceCards[i - 1], {
-              scale: 0.94,
-              opacity: 0.35,
-              duration: 1,
-              ease: 'power1.inOut'
-            }, `step-${i}`)
-            .fromTo(serviceCards[i],
-              { yPercent: 120, opacity: 0, scale: 0.94 },
-              { yPercent: 0, opacity: 1, scale: 1, duration: 1, ease: 'power1.inOut' },
-              `step-${i}`
-            );
-        }
-        servicesTL.to({}, { duration: 1 }); // Final pause before unpinning
-      }
+      // ─── SERVICES: Clean entrance reveal ─────────────────────────────────────
+      gsap.from('#services-heading-group', {
+        opacity: 0, y: 35, duration: 1, ease: 'power3.out',
+        scrollTrigger: { trigger: '#services', start: 'top 80%', toggleActions: 'play none none none' }
+      });
 
       // ─── TRANSITION STATEMENT: Editorial text scrub ─────────────────────────
       gsap.fromTo('.editorial-reveal-line',
@@ -896,25 +1144,15 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Right Column: Premium Architectural Visual (Fills Blank Space) */}
-              <div id="approach-right" className="lg:col-span-5">
-                <div className="relative rounded-md overflow-hidden border border-black/10 shadow-lg aspect-[4/3] bg-black group">
+              {/* Right Column: Mobile Product Engineering Visual */}
+              <div id="approach-right" className="lg:col-span-5 flex items-center justify-center">
+                <div className="relative w-full max-w-lg lg:max-w-none group">
                   <img 
-                    alt="VERHOST Architectural Headquarters — Modern Glass Technology Innovation Workspace" 
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter contrast-[1.08]"
-                    src="https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1200&auto=format&fit=crop"
+                    alt="Sovereign Mobile Product Engineering Showcase" 
+                    className="w-full h-auto object-contain filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.18)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                    src="/mobile-showcase-transparent.png"
                     loading="lazy"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  
-                  {/* Floating Metadata Indicator */}
-                  <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between text-white font-mono text-[11px]">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/80 backdrop-blur-md rounded border border-white/20">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] animate-pulse"></span>
-                      <span>VERHOST DIGITAL LABORATORY</span>
-                    </div>
-                    <span className="text-white/60">SOVEREIGN LABS</span>
-                  </div>
                 </div>
               </div>
 
@@ -923,208 +1161,347 @@ export default function App() {
           </div>
         </section>
 
-        {/* 4. SERVICES — HEADER */}
-        <section className="relative w-full bg-[#FAFAF7] overflow-hidden">
-          <div className="max-w-[1360px] mx-auto w-full px-4 sm:px-8 lg:px-16 pt-20 pb-4 sm:pt-24 lg:pt-28">
+        {/* 4. BESPOKE SERVICES SECTION WITH OVERSIZED WATERMARK BACKDROP & LAYERED CAROUSEL */}
+        <section 
+          id="services" 
+          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-24 pt-16 sm:pt-20 lg:pt-24 pb-14 sm:pb-16 lg:pb-20 border-b border-black/10 select-none"
+          aria-label="Services — 06 Core Disciplines"
+        >
+          {/* Architectural Oversized Faded SERVICES Background Watermark */}
+          <div 
+            aria-hidden="true" 
+            className="absolute top-2 sm:top-4 lg:top-6 left-1/2 -translate-x-1/2 select-none pointer-events-none z-0 w-full text-center overflow-hidden"
+          >
+            <span className="font-display font-extrabold text-[18vw] sm:text-[16vw] lg:text-[14vw] tracking-[0.14em] text-black/[0.04] leading-none uppercase inline-block whitespace-nowrap">
+              SERVICES
+            </span>
+          </div>
+
+          {/* Section Header Container */}
+          <div className="max-w-[1440px] 2xl:max-w-[1600px] mx-auto w-full px-4 sm:px-8 lg:px-12 relative z-10">
             
-            {/* ─── DESKTOP HEADER (lg and up) ─── */}
-            <div id="services-header" className="hidden lg:block w-full pb-6 border-b border-black/10 mb-6">
-              <div className="flex items-center justify-between gap-4 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
-                  <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHAT WE DO</span>
-                  <span className="text-black/30 font-mono text-xs">/</span>
-                  <span className="text-black/60 font-mono text-xs uppercase tracking-wider">06 CORE DISCIPLINES</span>
-                </div>
-                <div className="flex items-center gap-2 font-mono text-xs">
-                  <span className="text-black/40">ACTIVE:</span>
-                  <span className="text-[#16A34A] font-bold">0{activeServiceIdx + 1} / 06</span>
-                </div>
-              </div>
-
-              <div className="flex items-end justify-between gap-6 mb-5">
-                <h2 className="font-display font-bold text-4xl lg:text-5xl tracking-tight uppercase text-[#050505] max-w-3xl leading-[1.02]">
-                  TECHNOLOGY BUILT AROUND YOUR BUSINESS.
-                </h2>
-                <p className="text-sm font-sans text-black/60 max-w-sm leading-relaxed">
-                  Each discipline is engineered to operate autonomously or integrate into a unified, high-margin enterprise engine.
-                </p>
-              </div>
-
-              {/* Desktop 6 Discipline Navigation Pills */}
-              <div className="flex items-center gap-2 pt-1">
-                {services.map((srv, idx) => {
-                  const isCurrent = activeServiceIdx === idx;
-                  return (
-                    <button
-                      key={srv.num}
-                      type="button"
-                      onClick={() => scrollToService(idx)}
-                      className={`px-4 py-1.5 rounded-full font-mono text-xs font-bold transition-all duration-300 uppercase cursor-pointer ${
-                        isCurrent 
-                          ? 'bg-[#16A34A] text-white shadow-md scale-105' 
-                          : 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10'
-                      }`}
-                    >
-                      {srv.num} {srv.title.split(' ')[0]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* ─── MOBILE / TABLET HEADER (Under lg) — Ultra Compact so Service Card Takes the Full Screen! ─── */}
-            <div className="block lg:hidden w-full mb-3 pb-2 border-b border-black/10">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHAT WE DO</span>
-                </div>
-                <span className="font-mono text-xs font-bold text-[#16A34A]">
-                  0{activeServiceIdx + 1} / 06
-                </span>
-              </div>
-              
-              {/* Mobile 6 Pills in a single horizontal strip */}
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-                {services.map((srv, idx) => {
-                  const isCurrent = activeServiceIdx === idx;
-                  return (
-                    <button
-                      key={srv.num}
-                      type="button"
-                      onClick={() => scrollToService(idx)}
-                      className={`flex-shrink-0 px-2.5 py-1 rounded-full font-mono text-[10px] font-bold transition-all duration-300 uppercase ${
-                        isCurrent 
-                          ? 'bg-[#16A34A] text-white shadow-sm' 
-                          : 'bg-black/5 text-black/60'
-                      }`}
-                    >
-                      {srv.num} {srv.title.split(' ')[0]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 4.1 SERVICES — ANIMATED ONE-BY-ONE PINNED SHOWCASE */}
-        <section id="services" className="relative w-full bg-[#FAFAF7] border-b border-black/10 overflow-hidden pb-10">
-          <div className="max-w-[1360px] mx-auto w-full px-4 sm:px-8 lg:px-16 h-[100dvh] flex flex-col justify-center">
-            {/* Pinned Card Deck Stage: Full Screen Adaptive Height */}
-            <div className="relative w-full h-[90dvh] min-h-[500px]">
-              {services.map((srv, idx) => (
-                <div
-                  key={srv.num}
-                  className="service-deck-card absolute inset-0 rounded-2xl sm:rounded-3xl border border-black/10 shadow-[0_20px_60px_rgba(0,0,0,0.08)] bg-white overflow-hidden will-change-transform flex flex-col justify-between p-5 sm:p-8 lg:p-10"
-                  style={{ zIndex: idx + 5 }}
-                >
-                  {/* Watermark Number in Butler Serif */}
-                  <span className="absolute -bottom-6 -right-2 font-display font-bold text-[120px] sm:text-[180px] lg:text-[220px] text-black/[0.03] select-none pointer-events-none leading-none">
-                    {srv.num}
-                  </span>
-
-                  {/* Top Badge & Tagline */}
-                  <div className="flex items-center justify-between relative z-10">
-                    <div className="flex items-center gap-2">
-                      <span className="px-2.5 py-0.5 bg-[#16A34A]/10 text-[#16A34A] font-mono text-xs font-bold rounded border border-[#16A34A]/25">
-                        PRACTICE {srv.num} / 06
-                      </span>
-                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#16A34A] hidden sm:inline">
-                        &bull; {srv.tagline}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-black/40 uppercase">VERHOST ARCHITECTURE</span>
-                  </div>
-
-                  {/* Middle: Content Grid */}
-                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-10 items-center relative z-10 my-auto">
-                    
-                    {/* Left Details */}
-                    <div className="lg:col-span-7 flex flex-col justify-center">
-                      <h3 className="font-display font-bold text-2xl sm:text-4xl lg:text-5xl text-[#050505] uppercase tracking-tight mb-2 sm:mb-3">
-                        {srv.title}
-                      </h3>
-
-                      <p className="text-xs sm:text-base text-black/75 leading-relaxed mb-3 sm:mb-5 font-normal">
-                        {srv.description}
-                      </p>
-
-                      {/* Deliverables */}
-                      <div className="mb-3 sm:mb-5 pt-2 sm:pt-3 border-t border-black/10">
-                        <div className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-widest text-black/50 mb-1.5 sm:mb-2">
-                          CORE DELIVERABLES &amp; CAPABILITIES
-                        </div>
-                        <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-mono text-black/80">
-                          {srv.deliverables.map((item, dIdx) => (
-                            <div key={dIdx} className="flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] flex-shrink-0"></span>
-                              <span className="truncate">{item}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right / Middle Visual Banner (compact on mobile, spacious 4:3 on desktop) */}
-                    <div className="lg:col-span-5 relative z-10 w-full flex items-center">
-                      <div className="relative overflow-hidden rounded-xl sm:rounded-2xl group border border-black/10 shadow-md w-full h-32 sm:h-44 lg:aspect-[4/3] lg:h-auto bg-black/5">
-                        <img 
-                          alt={srv.alt} 
-                          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-95 contrast-[1.08]"
-                          src={srv.image}
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
-                        
-                        <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white font-mono text-[10px] sm:text-[11px]">
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-black/80 backdrop-blur-md rounded border border-white/20 uppercase tracking-wider">
-                            <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] animate-pulse"></span>
-                            <span>PRACTICE {srv.num}</span>
-                          </div>
-                          <span className="text-white/80 uppercase font-bold text-[9px] sm:text-[10px]">PRODUCTION GRADE</span>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Bottom Action Button */}
-                  <div className="flex items-center justify-between pt-2 border-t border-black/10 relative z-10">
-                    <a 
-                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#050505] hover:bg-[#16A34A] text-white font-mono text-xs font-bold uppercase tracking-wider rounded-md transition-all duration-300 shadow-md group" 
-                      href="#contact"
-                    >
-                      <span>DISCUSS {srv.title}</span>
-                      <span className="material-symbols-outlined text-sm transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
-                    </a>
-                    <span className="font-mono text-xs text-[#16A34A] font-bold">
-                      0{idx + 1} / 06
+            {/* Editorial Section Header */}
+            <div id="services-heading-group" className="pb-5 sm:pb-6 mb-5 sm:mb-6 border-b border-black/10">
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-5 mb-5">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-[#16A34A]">
+                      CORE DISCIPLINES
+                    </span>
+                    <span className="text-black/30 font-mono text-xs">/</span>
+                    <span className="text-black/60 font-mono text-[11px] uppercase tracking-wider">
+                      06 ARCHITECTURAL PRACTICES
                     </span>
                   </div>
 
+                  <h2 className="font-display font-bold text-2xl sm:text-4xl lg:text-[44px] tracking-tight uppercase text-[#050505] leading-[1.04] max-w-2xl">
+                    TECHNOLOGY BUILT AROUND YOUR BUSINESS.
+                  </h2>
                 </div>
-              ))}
-            </div>
 
-            {/* Bottom Progress Tracker */}
-            <div className="w-full flex items-center justify-between text-xs font-mono text-black/50 pt-3 border-t border-black/10 mt-2">
-              <div className="flex items-center gap-3">
-                <div className="w-24 sm:w-44 h-1.5 bg-black/10 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#16A34A] transition-all duration-300"
-                    style={{ width: `${((activeServiceIdx + 1) / 6) * 100}%` }}
-                  ></div>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <p className="text-xs sm:text-[13px] font-sans text-black/65 max-w-sm leading-relaxed">
+                    Six sovereign practices engineered to operate autonomously or integrate into a unified, high-margin enterprise engine.
+                  </p>
+                  <div className="hidden lg:flex items-center gap-2 pl-4 border-l border-black/10 font-mono text-xs">
+                    <span className="text-black/40 uppercase">ACTIVE:</span>
+                    <span className="text-[#16A34A] font-bold text-sm">
+                      0{activeServiceIdx + 1} <span className="text-black/30 font-normal">/ 06</span>
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[#050505] font-bold text-[11px] sm:text-xs">DISCIPLINE 0{activeServiceIdx + 1} OF 06</span>
               </div>
-              <div className="flex items-center gap-1.5 text-black/40 text-[11px] sm:text-xs">
-                <span className="hidden sm:inline">SCROLL TO ADVANCE</span>
-                <span className="material-symbols-outlined text-sm text-[#16A34A] animate-bounce">south</span>
+
+              {/* Direct Discipline Navigation Pills */}
+              <div 
+                className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1"
+                role="tablist"
+                aria-label="Service disciplines"
+              >
+                {services.map((srv, idx) => {
+                  const isCurrent = activeServiceIdx === idx;
+                  return (
+                    <button
+                      key={srv.num}
+                      type="button"
+                      role="tab"
+                      aria-selected={isCurrent}
+                      aria-controls={`service-card-${idx}`}
+                      id={`service-pill-${idx}`}
+                      onClick={() => scrollToService(idx)}
+                      className={`flex-shrink-0 px-3 py-1 rounded-full font-mono text-[11px] font-bold transition-all duration-300 uppercase cursor-pointer flex items-center gap-1.5 ${
+                        isCurrent
+                          ? 'bg-[#16A34A] text-white shadow-md shadow-[#16A34A]/25 scale-[1.02]'
+                          : 'bg-black/5 text-black/60 hover:text-black hover:bg-black/10'
+                      }`}
+                    >
+                      <span className={`text-[9px] ${isCurrent ? 'text-white/80' : 'text-[#16A34A]'}`}>{srv.num}</span>
+                      <span>{srv.title}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
+          </div>
 
+          {/* ─── BESPOKE 5-CARD FANNED CAROUSEL STAGE (REFINED 67% SIZING AT 100%) ─── */}
+          <div 
+            className="relative w-full max-w-[1920px] mx-auto overflow-hidden outline-none py-2 sm:py-4 px-2 sm:px-4 cursor-grab active:cursor-grabbing select-none"
+            tabIndex={0}
+            role="region"
+            aria-roledescription="carousel"
+            aria-label="Core Services Carousel"
+            onKeyDown={handleCarouselKeyDown}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+            onWheel={handleWheel}
+          >
+            <div className="relative w-full h-[490px] sm:h-[530px] md:h-[560px] lg:h-[590px] xl:h-[620px] flex items-center justify-center">
+              {services.map((srv, idx) => {
+                const diff = getCardOffset(idx, activeServiceIdx);
+                const isActive = diff === 0;
+                const isVisible = Math.abs(diff) <= (isMobile ? 1 : 2);
+
+                // High-performance GPU-composited geometry matched to 67% view proportions
+                let xTransform = '-50%';
+                let yTransform = '-50%';
+                let scale = 1.05;
+                let zIndex = 35;
+                let opacity = 1;
+
+                if (isMobile) {
+                  if (diff === 0) {
+                    scale = 1;
+                    zIndex = 35;
+                    opacity = 1;
+                  } else if (diff === -1) {
+                    xTransform = 'calc(-50% - 76%)';
+                    yTransform = 'calc(-50% + 12px)';
+                    scale = 0.88;
+                    zIndex = 25;
+                    opacity = 0.6;
+                  } else if (diff === 1) {
+                    xTransform = 'calc(-50% + 76%)';
+                    yTransform = 'calc(-50% + 12px)';
+                    scale = 0.88;
+                    zIndex = 25;
+                    opacity = 0.6;
+                  } else if (diff <= -2) {
+                    xTransform = 'calc(-50% - 130%)';
+                    yTransform = 'calc(-50% + 18px)';
+                    scale = 0.7;
+                    opacity = 0;
+                    zIndex = 5;
+                  } else {
+                    xTransform = 'calc(-50% + 130%)';
+                    yTransform = 'calc(-50% + 18px)';
+                    scale = 0.7;
+                    opacity = 0;
+                    zIndex = 5;
+                  }
+                } else {
+                  // Desktop 5-card fanned layout with balanced spread matching the screenshot
+                  if (diff === 0) {
+                    scale = 1.04;
+                    zIndex = 35;
+                    opacity = 1;
+                  } else if (diff === -1) {
+                    xTransform = 'calc(-50% - clamp(180px, 16vw, 290px))';
+                    yTransform = 'calc(-50% + 14px)';
+                    scale = 0.90;
+                    zIndex = 25;
+                    opacity = 0.88;
+                  } else if (diff === 1) {
+                    xTransform = 'calc(-50% + clamp(180px, 16vw, 290px))';
+                    yTransform = 'calc(-50% + 14px)';
+                    scale = 0.90;
+                    zIndex = 25;
+                    opacity = 0.88;
+                  } else if (diff === -2) {
+                    xTransform = 'calc(-50% - clamp(350px, 31vw, 560px))';
+                    yTransform = 'calc(-50% + 28px)';
+                    scale = 0.78;
+                    zIndex = 15;
+                    opacity = 0.76;
+                  } else if (diff === 2) {
+                    xTransform = 'calc(-50% + clamp(350px, 31vw, 560px))';
+                    yTransform = 'calc(-50% + 28px)';
+                    scale = 0.78;
+                    zIndex = 15;
+                    opacity = 0.76;
+                  } else if (diff <= -3) {
+                    xTransform = 'calc(-50% - clamp(460px, 42vw, 760px))';
+                    yTransform = 'calc(-50% + 36px)';
+                    scale = 0.65;
+                    opacity = 0;
+                    zIndex = 5;
+                  } else {
+                    xTransform = 'calc(-50% + clamp(460px, 42vw, 760px))';
+                    yTransform = 'calc(-50% + 36px)';
+                    scale = 0.65;
+                    opacity = 0;
+                    zIndex = 5;
+                  }
+                }
+
+                return (
+                  <div
+                    key={srv.num}
+                    id={`service-card-${idx}`}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`${srv.num} of 06: ${srv.title}`}
+                    aria-hidden={!isActive}
+                    onClick={() => {
+                      if (hasMouseDragged.current) return;
+                      if (diff !== 0) {
+                        navDirectionRef.current = diff > 0 ? 'next' : 'prev';
+                        setActiveServiceIdx(idx);
+                      }
+                    }}
+                    style={{
+                      transform: `translate3d(${xTransform}, ${yTransform}, 0) scale(${scale})`,
+                      zIndex,
+                      opacity,
+                      boxShadow: isActive 
+                        ? '0 25px 60px -12px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.1)' 
+                        : '0 15px 35px -10px rgba(0, 0, 0, 0.25)',
+                      pointerEvents: isVisible ? 'auto' : 'none',
+                      transition: prefersReducedMotion 
+                        ? 'none' 
+                        : 'transform 480ms cubic-bezier(0.22, 1, 0.36, 1), opacity 480ms cubic-bezier(0.22, 1, 0.36, 1)',
+                    }}
+                    className={`group absolute left-1/2 top-1/2 w-[78vw] sm:w-[290px] md:w-[320px] lg:w-[340px] xl:w-[360px] 2xl:w-[380px] h-[450px] sm:h-[480px] md:h-[510px] lg:h-[530px] xl:h-[550px] 2xl:h-[570px] rounded-[28px] sm:rounded-[32px] overflow-hidden will-change-[transform,opacity] select-none bg-black ${
+                      isActive ? 'cursor-default' : 'cursor-pointer hover:opacity-95'
+                    }`}
+                  >
+                    {/* Base Static Grayscale Image Layer (GPU-cached) */}
+                    <img 
+                      alt={srv.alt}
+                      src={srv.image}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-[0.92] brightness-[0.88] select-none pointer-events-none"
+                    />
+
+                    {/* Full Color Image Layer - smooth GPU opacity crossfade */}
+                    <img 
+                      alt=""
+                      src={srv.image}
+                      loading="lazy"
+                      aria-hidden="true"
+                      style={{ opacity: isActive ? 1 : 0 }}
+                      className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out select-none pointer-events-none"
+                    />
+
+                    {/* Inactive Card Dimming Scrim */}
+                    <div 
+                      aria-hidden="true"
+                      style={{ opacity: isActive ? 0 : 0.25 }}
+                      className="absolute inset-0 bg-black transition-opacity duration-500 ease-out pointer-events-none"
+                    />
+
+                    {/* Top Right Circular Arrow Icon (Matching Reference) */}
+                    <div className="absolute top-4 right-4 z-20">
+                      {isActive ? (
+                        <a
+                          href="#contact"
+                          aria-label={`Inquire about ${srv.title}`}
+                          className="w-10 h-10 rounded-full bg-white/20 hover:bg-[#16A34A] backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
+                        >
+                          <span className="material-symbols-outlined text-lg">north_east</span>
+                        </a>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white/70 flex items-center justify-center">
+                          <span className="material-symbols-outlined text-lg">north_east</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ─── BOTTOM FROSTED GLASS EFFECT PANEL (MATCHING REFERENCE) ─── */}
+                    <div className="absolute inset-x-0 bottom-0 z-20 p-5 sm:p-6 backdrop-blur-xl bg-black/50 border-t border-white/20 text-left flex flex-col justify-end transition-colors duration-300">
+                      {/* Rating Stars & Practice Indicator */}
+                      <div className="flex items-center gap-1 text-amber-400 text-xs mb-1.5 select-none">
+                        <span>★</span>
+                        <span>★</span>
+                        <span>★</span>
+                        <span>★</span>
+                        <span>★</span>
+                        <span className="font-mono text-[10px] text-white/70 uppercase tracking-widest ml-1 font-bold">
+                          PRACTICE {srv.num}
+                        </span>
+                      </div>
+
+                      {/* Service Name */}
+                      <h3 className="font-display font-bold text-xl sm:text-2xl text-white uppercase tracking-tight leading-[1.1] mb-1 drop-shadow-sm">
+                        {srv.title}
+                      </h3>
+
+                      {/* Tagline / Subtitle */}
+                      <p className="text-xs text-white/75 font-mono uppercase tracking-wider line-clamp-1">
+                        {srv.tagline}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ─── CIRCULAR PAGINATION DOTS (MATCHING REFERENCE) ─── */}
+          <div 
+            className="relative z-20 flex items-center justify-center gap-2.5 mt-4 sm:mt-6"
+            role="tablist"
+            aria-label="Services carousel pagination"
+          >
+            {/* Previous Button */}
+            <button
+              type="button"
+              onClick={goToPrevService}
+              aria-label="Previous service discipline"
+              className="w-9 h-9 rounded-full border border-black/20 hover:border-black hover:bg-black hover:text-white text-black/70 flex items-center justify-center transition-all duration-200 cursor-pointer mr-1 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-base">arrow_back</span>
+            </button>
+
+            {/* 6 Circular Dots */}
+            {services.map((srv, idx) => {
+              const isCurrent = activeServiceIdx === idx;
+              return (
+                <button
+                  key={srv.num}
+                  type="button"
+                  role="tab"
+                  aria-selected={isCurrent}
+                  aria-label={`Go to service ${srv.num}: ${srv.title}`}
+                  onClick={() => {
+                    if (idx !== activeServiceIdx) {
+                      navDirectionRef.current = idx > activeServiceIdx ? 'next' : 'prev';
+                      setActiveServiceIdx(idx);
+                    }
+                  }}
+                  className={`transition-all duration-300 rounded-full cursor-pointer ${
+                    isCurrent 
+                      ? 'w-3.5 h-3.5 bg-black border-2 border-black scale-110 shadow-sm' 
+                      : 'w-3 h-3 bg-transparent border-2 border-black/55 hover:border-black hover:scale-105'
+                  }`}
+                />
+              );
+            })}
+
+            {/* Next Button */}
+            <button
+              type="button"
+              onClick={goToNextService}
+              aria-label="Next service discipline"
+              className="w-9 h-9 rounded-full border border-black/20 hover:border-black hover:bg-black hover:text-white text-black/70 flex items-center justify-center transition-all duration-200 cursor-pointer ml-1 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-base">arrow_forward</span>
+            </button>
           </div>
         </section>
 
@@ -1169,25 +1546,141 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Right Column: Cinematic Neural Hardware Visual (Fills Blank Space) */}
-              <div className="lg:col-span-5">
-                <div id="transition-image-wrap" className="relative rounded-md overflow-hidden border border-white/15 shadow-2xl aspect-[4/3] bg-[#0A0D0A] group">
+              {/* Right Column: Autonomous Cloud Architecture Visual with Animated Green Wire Connection Points (No Box, Transparent Background) */}
+              <div className="lg:col-span-5 flex items-center justify-center">
+                <div id="transition-image-wrap" className="relative w-full aspect-[1024/788] group">
+                  {/* Subtle Ambient Green Core Glow */}
+                  <div className="absolute inset-x-[15%] inset-y-[20%] bg-[#19C763]/20 blur-[50px] rounded-full pointer-events-none"></div>
+
+                  {/* Transparent 3D Cloud Architecture Hub */}
                   <img 
-                    alt="VERHOST Neural Hardware and High-Performance Compute Infrastructure" 
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-95 contrast-[1.15]"
-                    src="https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop"
-                    loading="lazy"
+                    alt="VERHOST Autonomous Sovereign Cloud Architecture and Neural Node Network" 
+                    className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_25px_60px_rgba(25,199,99,0.28)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                    src="/cloud-architecture-hub-transparent.png"
+                    loading="eager"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent"></div>
                   
-                  {/* Floating Metadata Indicator */}
-                  <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between text-white font-mono text-[11px]">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-black/80 backdrop-blur-md rounded border border-[#16A34A]/40 text-[#19C763]">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] animate-pulse"></span>
-                      <span>AUTONOMOUS INTELLIGENCE CORE</span>
-                    </div>
-                    <span className="text-white/50">VERHOST LABS</span>
-                  </div>
+                  {/* Interactive / Animated Green Point Wires Overlay */}
+                  <svg className="absolute inset-0 z-20 w-full h-full pointer-events-none select-none" viewBox="0 0 1024 788" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <filter id="hub-glow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur1" />
+                        <feGaussianBlur in="SourceGraphic" stdDeviation="7" result="blur2" />
+                        <feMerge>
+                          <feMergeNode in="blur2" />
+                          <feMergeNode in="blur1" />
+                          <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                      </filter>
+                      <radialGradient id="center-hub-pulse" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor="#19C763" stopOpacity="0.4" />
+                        <stop offset="50%" stopColor="#19C763" stopOpacity="0.12" />
+                        <stop offset="100%" stopColor="#19C763" stopOpacity="0" />
+                      </radialGradient>
+                    </defs>
+
+                    {/* Central Cloud Node Breathing Ambient Pulse */}
+                    <circle cx="512" cy="420" r="140" fill="url(#center-hub-pulse)">
+                      <animate attributeName="r" values="130;160;130" dur="3.5s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="0.6;1;0.6" dur="3.5s" repeatCount="indefinite" />
+                    </circle>
+
+                    {/* Circuit Wire Traces (Connecting Central Hub to 6 Pedestal Nodes) */}
+                    <path d="M 440 648 L 236 752" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 400 668 L 196 772" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 360 688 L 156 792" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+
+                    <path d="M 588 672 L 792 772" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 628 652 L 832 752" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 668 632 L 872 732" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+
+                    <path d="M 350 550 L 172 516" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 320 615 L 172 560" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+
+                    <path d="M 670 550 L 848 516" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 700 615 L 848 560" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+
+                    <path d="M 355 310 L 246 248" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 375 322 L 266 260" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+
+                    <path d="M 668 310 L 778 248" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+                    <path d="M 648 322 L 758 260" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
+
+                    {/* Faint Energy Tracer Beams along Wires */}
+                    <path d="M 440 648 L 236 752" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
+                      <animate attributeName="stroke-dashoffset" values="0;-56" dur="1.8s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 588 672 L 792 772" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
+                      <animate attributeName="stroke-dashoffset" values="0;-56" dur="1.8s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 350 550 L 172 516" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
+                      <animate attributeName="stroke-dashoffset" values="0;-56" dur="2s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 670 550 L 848 516" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
+                      <animate attributeName="stroke-dashoffset" values="0;-56" dur="2s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 355 310 L 246 248" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
+                      <animate attributeName="stroke-dashoffset" values="0;-56" dur="1.6s" repeatCount="indefinite" />
+                    </path>
+                    <path d="M 668 310 L 778 248" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
+                      <animate attributeName="stroke-dashoffset" values="0;-56" dur="1.6s" repeatCount="indefinite" />
+                    </path>
+
+                    {/* Moving Green Points / Data Packets on Wires (Bidirectional) */}
+                    {/* Bottom-Left Wires */}
+                    <circle r="4.5" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.2s" repeatCount="indefinite" path="M 440 648 L 236 752" />
+                    </circle>
+                    <circle r="3.5" fill="#52FFA0" filter="url(#hub-glow)">
+                      <animateMotion dur="2.8s" begin="1.1s" repeatCount="indefinite" path="M 196 772 L 400 668" />
+                    </circle>
+                    <circle r="4" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.5s" begin="0.5s" repeatCount="indefinite" path="M 360 688 L 156 792" />
+                    </circle>
+
+                    {/* Bottom-Right Wires */}
+                    <circle r="4.5" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.0s" repeatCount="indefinite" path="M 588 672 L 792 772" />
+                    </circle>
+                    <circle r="3.5" fill="#52FFA0" filter="url(#hub-glow)">
+                      <animateMotion dur="3.0s" begin="0.7s" repeatCount="indefinite" path="M 832 752 L 628 652" />
+                    </circle>
+                    <circle r="4" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.4s" begin="1.3s" repeatCount="indefinite" path="M 668 632 L 872 732" />
+                    </circle>
+
+                    {/* Mid-Left Wires */}
+                    <circle r="4" fill="#52FFA0" filter="url(#hub-glow)">
+                      <animateMotion dur="2.4s" begin="0.3s" repeatCount="indefinite" path="M 350 550 L 172 516" />
+                    </circle>
+                    <circle r="3.5" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.7s" begin="1.5s" repeatCount="indefinite" path="M 172 560 L 320 615" />
+                    </circle>
+
+                    {/* Mid-Right Wires */}
+                    <circle r="4" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.5s" begin="0.8s" repeatCount="indefinite" path="M 670 550 L 848 516" />
+                    </circle>
+                    <circle r="3.5" fill="#52FFA0" filter="url(#hub-glow)">
+                      <animateMotion dur="2.2s" begin="1.2s" repeatCount="indefinite" path="M 848 560 L 700 615" />
+                    </circle>
+
+                    {/* Top-Left Wires */}
+                    <circle r="4" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.0s" begin="0.2s" repeatCount="indefinite" path="M 355 310 L 246 248" />
+                    </circle>
+                    <circle r="3.5" fill="#52FFA0" filter="url(#hub-glow)">
+                      <animateMotion dur="2.6s" begin="1.0s" repeatCount="indefinite" path="M 266 260 L 375 322" />
+                    </circle>
+
+                    {/* Top-Right Wires */}
+                    <circle r="4" fill="#FFFFFF" filter="url(#hub-glow)">
+                      <animateMotion dur="2.3s" begin="0.4s" repeatCount="indefinite" path="M 668 310 L 778 248" />
+                    </circle>
+                    <circle r="3.5" fill="#52FFA0" filter="url(#hub-glow)">
+                      <animateMotion dur="2.5" begin="1.4s" repeatCount="indefinite" path="M 758 260 L 648 322" />
+                    </circle>
+                  </svg>
                 </div>
               </div>
 
@@ -1308,51 +1801,149 @@ export default function App() {
           </div>
         </section>
 
-        {/* 9. PROCESS (DEPLOYMENT METHODOLOGY) — EXACTLY LIKE IMAGE 2 */}
-        <section id="process" className="w-full bg-[#FAFAF7] px-6 sm:px-10 lg:px-16 py-32 sm:py-40 border-b border-black/10">
-          <div className="max-w-[1360px] mx-auto">
+        {/* 9. PROCESS (DEPLOYMENT METHODOLOGY) — 3D ROTATING CONCAVE RIBBON MATCHING REFERENCE IMAGE */}
+        <section 
+          id="process" 
+          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-28 sm:pt-36 lg:pt-44 pb-20 sm:pb-28 border-b border-black/10 select-none"
+          aria-label="Deployment Methodology — Behind the Architecture"
+        >
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
             
-            <div id="process-header" className="max-w-3xl mb-16">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">DEPLOYMENT METHODOLOGY</span>
+            {/* Header matching Reference Image */}
+            <div id="process-header" className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-[#16A34A]">BEHIND THE DESIGNS</span>
               </div>
-              <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-4">
-                FROM IDEA TO IMPACT.
+              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-5 leading-[1.08]">
+                Curious What Else We've<br className="hidden sm:inline" /> Created?
               </h2>
-              <p className="text-base sm:text-lg text-black/60 font-sans">
-                A disciplined, six-stage lifecycle engineered by VERHOST for predictability, transparency, and rapid delivery.
+              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-8">
+                Explore more brand identities, packaging, and digital design work in our extended portfolio.
               </p>
+
+              {/* Pill Button with Green Circle Arrow matching reference */}
+              <div className="flex justify-center">
+                <a 
+                  href="#work"
+                  className="inline-flex items-center gap-3.5 pl-6 pr-2.5 py-2 rounded-full border border-black/15 bg-white text-sm font-sans font-medium text-[#050505] shadow-sm hover:shadow-md hover:border-black/30 transition-all group"
+                >
+                  <span>See more Projects</span>
+                  <span className="w-8 h-8 rounded-full bg-[#16A34A] flex items-center justify-center text-white transition-transform duration-300 group-hover:translate-x-0.5">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </span>
+                </a>
+              </div>
             </div>
 
-            {/* Clean 6-Card Grid matching Image 2 */}
-            <div id="process-grid" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {processSteps.map((step, idx) => {
-                const isCurrent = activeProcess === idx;
+            {/* 3D Rotating Concave Ribbon Stage */}
+            <div 
+              id="process-ribbon-stage"
+              className="relative w-full h-[340px] sm:h-[440px] lg:h-[480px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
+              style={{ perspective: isMobile ? '800px' : '1200px' }}
+              onMouseDown={handleRibbonMouseDown}
+              onMouseMove={handleRibbonMouseMove}
+              onMouseUp={handleRibbonMouseUp}
+              onMouseLeave={() => {
+                isRibbonHovered.current = false;
+                handleRibbonMouseUp();
+              }}
+              onMouseEnter={() => {
+                isRibbonHovered.current = true;
+              }}
+              onTouchStart={handleRibbonTouchStart}
+              onTouchMove={handleRibbonTouchMove}
+              onTouchEnd={handleRibbonTouchEnd}
+            >
+              {/* Left/Right Edge Soft Gradient Masks */}
+              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
+              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
+
+              {/* 3D Preserved Cylinder Container */}
+              <div 
+                className="relative w-full h-full flex items-center justify-center pointer-events-none"
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                {denseMethodologyCards.map((card, i) => {
+                  const N = denseMethodologyCards.length; // 24
+                  const baseAngle = i * (360 / N); // 15 deg per card
+                  const deg = ((baseAngle + ribbonRotation) % 360 + 360) % 360;
+                  const diff = deg > 180 ? deg - 360 : deg;
+
+                  // Hide back-facing cards outside the front 150-degree arc
+                  if (Math.abs(diff) > 75) return null;
+
+                  const rad = (diff * Math.PI) / 180;
+                  // Radius and depth scale with viewport
+                  const radiusX = isMobile ? 320 : 780;
+                  const depthZ = isMobile ? 120 : 270;
+                  const x = Math.sin(rad) * radiusX;
+                  const z = (1 - Math.cos(rad)) * depthZ;
+                  const y = -(1 - Math.cos(rad)) * (isMobile ? 12 : 24);
+                  const scale = (isMobile ? 0.70 : 0.72) + (1 - Math.cos(rad)) * (isMobile ? 0.46 : 0.52);
+                  const rotY = -diff * (isMobile ? 0.50 : 0.65);
+                  const rotZ = -diff * 0.035;
+                  const opacity = Math.max(0, Math.min(1, (75 - Math.abs(diff)) / 12));
+                  const zIndex = Math.round((1 - Math.cos(rad)) * 100);
+
+                  return (
+                    <div
+                      key={`${card.id}-${i}`}
+                      className="absolute w-[150px] sm:w-[185px] lg:w-[210px] h-[240px] sm:h-[300px] lg:h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.16)] bg-black/5 will-change-transform pointer-events-auto transition-shadow duration-300 hover:shadow-[0_25px_50px_rgba(0,0,0,0.25)]"
+                      style={{
+                        transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(${scale.toFixed(2)})`,
+                        zIndex,
+                        opacity: opacity.toFixed(2)
+                      }}
+                      onClick={() => {
+                        // Smoothly rotate clicked card to center
+                        const targetDeg = -(baseAngle % 360);
+                        const current = ribbonRotationRef.current;
+                        const diffAngle = ((((targetDeg - current) % 360) + 540) % 360) - 180;
+                        targetRibbonRotation.current = current + diffAngle;
+                      }}
+                    >
+                      <img 
+                        src={card.image} 
+                        alt={card.title} 
+                        className="w-full h-full object-cover select-none pointer-events-none"
+                        loading="eager"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4 Methodology Pillars matching reference image */}
+            <div 
+              id="process-grid" 
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-10 sm:mt-16 pt-8 border-t border-black/10"
+            >
+              {methodologyPhases.map((phase, idx) => {
+                const isActive = activeMethodologyPhase === idx;
                 return (
-                  <div 
-                    key={step.num}
-                    onClick={() => setActiveProcess(idx)}
-                    className={`p-8 rounded-lg border transition-all duration-300 cursor-pointer bg-white ${
-                      isCurrent 
-                        ? 'border-2 border-[#16A34A] shadow-sm' 
-                        : 'border border-black/10 hover:border-black/30'
+                  <button
+                    key={phase.num}
+                    type="button"
+                    onClick={() => rotateToPhase(idx)}
+                    className={`text-center group p-3 sm:p-4 rounded-xl transition-all cursor-pointer ${
+                      isActive ? 'bg-black/[0.03]' : 'hover:bg-black/[0.02]'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-6">
-                      <span className={`font-mono text-sm font-bold ${isCurrent ? 'text-[#16A34A]' : 'text-black/40'}`}>
-                        {step.num}
-                      </span>
-                      <span className={`w-2 h-2 rounded-full ${isCurrent ? 'bg-[#16A34A]' : 'bg-black/10'}`}></span>
+                    <div className={`font-mono font-bold text-sm sm:text-base mb-1.5 transition-colors ${
+                      isActive ? 'text-[#16A34A]' : 'text-[#16A34A]/80 group-hover:text-[#16A34A]'
+                    }`}>
+                      {phase.num}
                     </div>
-
-                    <h3 className="font-display font-bold text-xl sm:text-2xl text-[#050505] uppercase mb-3">
-                      {step.name}
-                    </h3>
-
-                    <p className="text-xs sm:text-sm text-black/60 leading-relaxed font-sans">
-                      {step.desc}
+                    <div className="font-display font-medium text-base sm:text-lg text-[#050505] mb-1">
+                      {phase.title}
+                    </div>
+                    <p className="text-xs text-black/55 font-sans leading-relaxed line-clamp-2">
+                      {phase.desc}
                     </p>
-                  </div>
+                  </button>
                 );
               })}
             </div>

@@ -51,7 +51,8 @@ async function runTests() {
       networkFailures.push({ vp: vp.name, url, error: request.failure()?.errorText });
     });
 
-    await page.goto('http://localhost:5174/', { waitUntil: 'domcontentloaded', timeout: 20000 });
+    const targetUrl = process.env.TEST_URL || 'http://localhost:5173/';
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
     await page.waitForTimeout(1000);
 
     // 1. Check Horizontal Overflow (User cannot horizontally scroll and doc does not expand beyond viewport)
@@ -140,16 +141,20 @@ async function runTests() {
       await page.locator('#process').scrollIntoViewIfNeeded();
       await page.waitForTimeout(400);
 
-      const processCards = page.locator('#process-grid > div');
-      const pCount = await processCards.count();
-      console.log(`  Testing #process cards: ${pCount} cards rendered.`);
-      if (pCount !== 6) {
-        issuesFound.push({ type: 'Process Grid Incomplete', viewport: vp.name, details: `Expected 6 cards, found ${pCount}` });
+      const ribbonCards = page.locator('#process-ribbon-stage img');
+      const rCount = await ribbonCards.count();
+      console.log(`  Testing #process ribbon cards: ${rCount} cards rendered.`);
+
+      const processPhases = page.locator('#process-grid > button');
+      const pCount = await processPhases.count();
+      console.log(`  Testing #process phases: ${pCount} phases rendered.`);
+      if (pCount !== 4) {
+        issuesFound.push({ type: 'Process Grid Incomplete', viewport: vp.name, details: `Expected 4 phases, found ${pCount}` });
       } else {
-        // Click card 3 (DESIGN)
-        await processCards.nth(2).click();
+        // Click phase 2 (Design & Development)
+        await processPhases.nth(1).click();
         await page.waitForTimeout(200);
-        console.log(`  ✅ Process cards clicked and responsive.`);
+        console.log(`  ✅ Process phase clicked and interactive.`);
       }
     }
 
