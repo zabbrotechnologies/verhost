@@ -18,6 +18,12 @@ export default {
           surface: "#FBFBFA",
           card: "#F6F7F5",
           border: "#E5EAE5"
+        },
+        pillar: {
+          sapphire: "#253B56",
+          graphite: "#292B35",
+          teal: "#176C68",
+          burgundy: "#633847"
         }
       },
       fontFamily: {

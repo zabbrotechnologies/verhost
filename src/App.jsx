@@ -5,6 +5,497 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
+// ─── WHY VERHOST: Cursor-Reactive Parallax Row with Waterdrop Reveal ──────────
+function WhyPrincipleRow({ pr, idx, isActive, onActivate }) {
+  const rowRef = useRef(null);
+  const imageRef = useRef(null);
+  const revealLayerRef = useRef(null);
+  const rippleRingRef = useRef(null);
+  const isTouchRef = useRef(false);
+
+  const dropAnim = useRef(null);
+  const dropState = useRef({ r: 0, x: 0, y: 0 });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      isTouchRef.current = !window.matchMedia('(hover: hover)').matches || 
+                           window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    }
+  }, []);
+
+  const handleMouseMove = (e) => {
+    if (isTouchRef.current || !rowRef.current || !imageRef.current) return;
+    const rect = rowRef.current.getBoundingClientRect();
+    if (rect.height <= 0) return;
+
+    // Relative vertical position: 0 (top edge) to 1 (bottom edge)
+    const relY = (e.clientY - rect.top) / rect.height;
+    // Normalized: -1 (top) to +1 (bottom)
+    const normY = Math.max(-1, Math.min(1, (relY - 0.5) * 2));
+
+    // Clamp travel to 12% of row height (within the 15% top/bottom bleed buffer)
+    const maxTravel = Math.max(16, Math.min(32, rect.height * 0.12));
+    // Opposite glide direction for natural depth parallax
+    const targetY = -normY * maxTravel;
+
+    gsap.to(imageRef.current, {
+      y: targetY,
+      duration: 0.55,
+      ease: 'power2.out',
+      overwrite: 'auto'
+    });
+  };
+
+  const handleMouseEnter = (e) => {
+    onActivate(idx);
+    if (isTouchRef.current || !rowRef.current || !revealLayerRef.current) return;
+
+    const rect = rowRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+    const y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+    // Calculate maximum radius to fully encompass the rectangular row
+    const maxR = Math.ceil(Math.hypot(Math.max(x, rect.width - x), Math.max(y, rect.height - y)));
+
+    dropState.current.x = x;
+    dropState.current.y = y;
+
+    // Trigger waterdrop ripple splash ring at cursor entry point
+    if (rippleRingRef.current) {
+      gsap.killTweensOf(rippleRingRef.current);
+      gsap.fromTo(
+        rippleRingRef.current,
+        {
+          left: x,
+          top: y,
+          width: 0,
+          height: 0,
+          opacity: 0.95,
+          scale: 0.1
+        },
+        {
+          width: Math.min(rect.width * 0.75, 360),
+          height: Math.min(rect.width * 0.75, 360),
+          opacity: 0,
+          scale: 1.4,
+          duration: 0.8,
+          ease: 'power2.out'
+        }
+      );
+    }
+
+    // Animate waterdrop expanding circle revealing the image
+    if (dropAnim.current) dropAnim.current.kill();
+    gsap.killTweensOf(revealLayerRef.current);
+
+    revealLayerRef.current.style.opacity = '1';
+
+    dropAnim.current = gsap.fromTo(
+      dropState.current,
+      { r: 0 },
+      {
+        r: maxR + 10,
+        duration: 0.75,
+        ease: 'power2.out',
+        onUpdate: () => {
+          if (revealLayerRef.current) {
+            const clipVal = `circle(${dropState.current.r}px at ${dropState.current.x}px ${dropState.current.y}px)`;
+            revealLayerRef.current.style.clipPath = clipVal;
+            revealLayerRef.current.style.webkitClipPath = clipVal;
+          }
+        },
+        onComplete: () => {
+          if (revealLayerRef.current) {
+            revealLayerRef.current.style.clipPath = 'none';
+            revealLayerRef.current.style.webkitClipPath = 'none';
+          }
+        }
+      }
+    );
+
+    handleMouseMove(e);
+  };
+
+  const handleMouseLeave = (e) => {
+    if (isTouchRef.current) return;
+
+    // Reset image vertical parallax smoothly to center
+    if (imageRef.current) {
+      gsap.to(imageRef.current, {
+        y: 0,
+        duration: 0.75,
+        ease: 'power2.out',
+        overwrite: 'auto'
+      });
+    }
+
+    // Smoothly close the waterdrop transition back to normal view
+    if (dropAnim.current) dropAnim.current.kill();
+    if (rowRef.current && revealLayerRef.current) {
+      const rect = rowRef.current.getBoundingClientRect();
+      const exitX = e ? Math.max(0, Math.min(rect.width, e.clientX - rect.left)) : dropState.current.x;
+      const exitY = e ? Math.max(0, Math.min(rect.height, e.clientY - rect.top)) : dropState.current.y;
+      
+      const maxR = Math.ceil(Math.hypot(Math.max(exitX, rect.width - exitX), Math.max(exitY, rect.height - exitY)));
+      dropState.current.x = exitX;
+      dropState.current.y = exitY;
+
+      dropAnim.current = gsap.fromTo(
+        dropState.current,
+        { r: maxR },
+        {
+          r: 0,
+          duration: 0.55,
+          ease: 'power2.inOut',
+          onUpdate: () => {
+            if (revealLayerRef.current) {
+              const clipVal = `circle(${dropState.current.r}px at ${dropState.current.x}px ${dropState.current.y}px)`;
+              revealLayerRef.current.style.clipPath = clipVal;
+              revealLayerRef.current.style.webkitClipPath = clipVal;
+            }
+          },
+          onComplete: () => {
+            if (revealLayerRef.current) {
+              revealLayerRef.current.style.opacity = '0';
+              revealLayerRef.current.style.clipPath = 'circle(0px at 0px 0px)';
+              revealLayerRef.current.style.webkitClipPath = 'circle(0px at 0px 0px)';
+            }
+          }
+        }
+      );
+    }
+  };
+
+  return (
+    <div
+      ref={rowRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onClick={() => onActivate(idx)}
+      className="why-row group relative overflow-hidden w-full py-12 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-12 cursor-pointer select-none transition-colors bg-white hover:bg-[#FAFAF7]/40"
+      style={{ position: 'relative' }}
+    >
+      {/* ─── 1. BASE LAYER (Normal View: Clean rectangle, no image, editorial typography) ─── */}
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        {/* Principle Number */}
+        <div className="lg:col-span-1 font-mono text-xs sm:text-sm font-bold text-[#16A34A] tracking-wider">
+          {pr.num}
+        </div>
+
+        {/* Large Principle Heading */}
+        <div className="lg:col-span-5">
+          <h3 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl uppercase tracking-tight text-[#050505] transition-colors duration-300">
+            {pr.title}
+          </h3>
+        </div>
+
+        {/* Description Column */}
+        <div className="lg:col-span-6">
+          <p className="text-base sm:text-lg text-black/70 leading-relaxed font-normal transition-colors duration-300">
+            {pr.desc}
+          </p>
+        </div>
+      </div>
+
+      {/* ─── 2. WATERDROP RIPPLE SPLASH WAVE (Tactile droplet impact at cursor point) ─── */}
+      <span
+        ref={rippleRingRef}
+        className="absolute pointer-events-none rounded-full border border-[#16A34A]/80 shadow-[0_0_24px_rgba(22,163,74,0.5)] z-30 -translate-x-1/2 -translate-y-1/2"
+        style={{ opacity: 0, width: 0, height: 0 }}
+        aria-hidden="true"
+      />
+
+      {/* ─── 3. HOVER REVEAL LAYER (Waterdrop clip-path: Image + Parallax + Overlay + Active Typography) ─── */}
+      <div
+        ref={revealLayerRef}
+        className="absolute inset-0 pointer-events-none select-none overflow-hidden z-20 py-12 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-12 flex items-center"
+        style={{
+          opacity: 0,
+          clipPath: 'circle(0px at 0px 0px)',
+          WebkitClipPath: 'circle(0px at 0px 0px)',
+          willChange: 'clip-path, opacity'
+        }}
+        aria-hidden="true"
+      >
+        {/* Background Image Layer (taller than row for internal vertical parallax) */}
+        <div
+          className="absolute inset-x-0 w-full overflow-hidden"
+          style={{
+            top: '-15%',
+            height: '130%',
+            willChange: 'transform'
+          }}
+        >
+          <img
+            ref={imageRef}
+            src={pr.image}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        {/* Refined gradient cover with balanced opacity for enhanced contrast and image visibility */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/40 to-black/25" />
+
+        {/* Revealed Content: identical geometry, with VERHOST green heading and crisp white description */}
+        <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-1 font-mono text-xs sm:text-sm font-bold text-[#16A34A] tracking-wider drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+            {pr.num}
+          </div>
+          <div className="lg:col-span-5">
+            <h3 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl uppercase tracking-tight text-[#16A34A] drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
+              {pr.title}
+            </h3>
+          </div>
+          <div className="lg:col-span-6">
+            <p className="text-base sm:text-lg text-white leading-relaxed font-normal drop-shadow-[0_2px_6px_rgba(0,0,0,0.85)]">
+              {pr.desc}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── 3-SEGMENT CONTINUOUS DIRECTIONAL BRAND-GREEN CHEVRON ARROW (ENLARGED) ────
+function AnimatedChevronArrow({ isActive, prefersReducedMotion, compact = false }) {
+  const segments = [0, 1, 2]; // 3 enlarged arrows
+  const step = compact ? 9 : 13;
+  const startX = compact ? 1.5 : 2;
+  const width = compact ? 30 : 44;
+  const height = compact ? 18 : 22;
+  const chevronW = compact ? 6 : 8;
+  const animName = compact ? 'chevronPulseCompact' : 'chevronPulseDesktop';
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="shrink-0 overflow-visible select-none inline-block align-middle pointer-events-none"
+      aria-hidden="true"
+    >
+      {segments.map((idx) => {
+        const xOffset = startX + idx * step;
+        const delayMs = idx * 160;
+
+        const style = isActive
+          ? prefersReducedMotion
+            ? {
+                opacity: 1,
+                transform: 'none',
+                transition: 'opacity 250ms ease'
+              }
+            : {
+                animation: `${animName} 1.6s cubic-bezier(0.25, 1, 0.5, 1) infinite`,
+                animationDelay: `${delayMs}ms`,
+                willChange: 'opacity, transform'
+              }
+          : {
+              opacity: 0.32,
+              transform: 'translateX(0px)',
+              animation: 'none',
+              transition: 'opacity 350ms ease, transform 350ms ease'
+            };
+
+        const pathD = compact
+          ? `M${xOffset} 2.5L${xOffset + chevronW} 9L${xOffset} 15.5`
+          : `M${xOffset} 3L${xOffset + chevronW} 11L${xOffset} 19`;
+
+        return (
+          <path
+            key={idx}
+            d={pathD}
+            stroke="#16A34A"
+            strokeWidth={compact ? "2.4" : "3.0"}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={style}
+          />
+        );
+      })}
+    </svg>
+  );
+}
+
+// ─── PROBLEM -> SOLUTION TRANSFORMATION ROW ──────────────────────────────────
+function TransformationRow({ item, index, isActive, onActivate, onDeactivate, onToggle, prefersReducedMotion }) {
+  const handleMouseEnter = () => {
+    onActivate();
+  };
+
+  const handleMouseLeave = () => {
+    onDeactivate();
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+
+  const handleFocus = (e) => {
+    try {
+      if (e.target.matches(':focus-visible')) {
+        onActivate();
+      }
+    } catch {
+      // Fallback
+    }
+  };
+
+  return (
+    <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onFocus={handleFocus}
+      onBlur={onDeactivate}
+      onClick={onToggle}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="button"
+      aria-expanded={isActive}
+      aria-label={`${item.problem} to ${item.solution}. ${item.impact}`}
+      className={`transformation-row group relative w-full cursor-pointer select-none rounded-2xl transition-all duration-400 ease-out focus:outline-none focus-visible:ring-1 focus-visible:ring-[#16A34A] ${
+        isActive
+          ? 'bg-[#F9FAF8] border border-black/[0.08] shadow-[0_12px_36px_-12px_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(0,0,0,0.03)] -translate-y-0.5'
+          : 'bg-transparent border border-transparent shadow-none hover:bg-[#F9FAF8]/60 hover:border-black/[0.04]'
+      }`}
+    >
+      {/* ─── CARD COLLIDING UI SHEEN (appears only when hovered, matching arrow pulse) ─── */}
+      <div
+        className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0"
+        style={{
+          opacity: isActive ? 1 : 0,
+          transition: 'opacity 400ms ease'
+        }}
+        aria-hidden="true"
+      >
+        <div
+          className="w-full h-full"
+          style={{
+            background: 'linear-gradient(90deg, transparent 0%, rgba(22, 163, 74, 0.04) 25%, rgba(22, 163, 74, 0.09) 50%, transparent 75%)',
+            animation: isActive && !prefersReducedMotion ? 'cardCollidingSheen 1.6s cubic-bezier(0.25, 1, 0.5, 1) infinite' : 'none'
+          }}
+        />
+      </div>
+
+      {/* ─── LEFT COLLISION ACCENT INDICATOR (snaps in on hover) ─── */}
+      <div
+        className="hidden lg:block absolute left-3 top-1/2 -translate-y-1/2 w-1.5 h-7 rounded-full bg-[#16A34A] transition-all duration-400 pointer-events-none z-10"
+        style={{
+          opacity: isActive ? 1 : 0,
+          transform: isActive ? 'translate(0, -50%) scale(1)' : 'translate(-6px, -50%) scale(0.6)'
+        }}
+        aria-hidden="true"
+      />
+
+      {/* ─── DESKTOP VIEW (≥ 1024px) ─── */}
+      <div className="hidden lg:block relative w-full py-8 xl:py-9 px-6 sm:px-8 z-10">
+        <div className="relative w-full h-[68px] flex items-center">
+          {/* Description (Pinned to Right Edge, Fades & Slides In) */}
+          <div
+            className="absolute right-0 top-1/2 flex items-center justify-end w-full max-w-[260px] xl:max-w-[340px] 2xl:max-w-[400px] pointer-events-none z-10"
+            style={{
+              opacity: isActive ? 1 : 0,
+              transform: isActive
+                ? 'translate(0px, -50%)'
+                : (prefersReducedMotion ? 'translate(0px, -50%)' : 'translate(18px, -50%)'),
+              transitionProperty: 'opacity, transform',
+              transitionDuration: prefersReducedMotion ? '0ms' : '580ms',
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              transitionDelay: isActive
+                ? (prefersReducedMotion ? '0ms' : '200ms')
+                : '0ms',
+              pointerEvents: isActive ? 'auto' : 'none'
+            }}
+            aria-hidden={!isActive}
+          >
+            <p className="text-xs lg:text-[12.5px] xl:text-[13.5px] 2xl:text-[14.5px] text-black/75 leading-relaxed font-sans text-left">
+              {item.impact}
+            </p>
+          </div>
+
+          {/* Coordinated Problem -> Chevrons -> Solution Group (Centered at rest, glides left on hover) */}
+          <div
+            className="absolute top-1/2 flex items-center gap-3.5 xl:gap-4.5 whitespace-nowrap z-20 pointer-events-none"
+            style={{
+              left: isActive ? '24px' : '50%',
+              transform: isActive ? 'translate(0%, -50%)' : 'translate(-50%, -50%)',
+              transitionProperty: prefersReducedMotion ? 'none' : 'left, transform',
+              transitionDuration: prefersReducedMotion ? '0ms' : '680ms',
+              transitionTimingFunction: 'cubic-bezier(0.16, 1, 0.3, 1)',
+              willChange: 'left, transform'
+            }}
+          >
+            <span className="font-display font-bold text-base lg:text-[0.98rem] min-[1150px]:text-[1.08rem] xl:text-[1.22rem] 2xl:text-[1.36rem] uppercase tracking-tight text-[#050505]">
+              {item.problem}
+            </span>
+            <AnimatedChevronArrow isActive={isActive} prefersReducedMotion={prefersReducedMotion} />
+            <span
+              className={`font-display font-bold text-base lg:text-[0.98rem] min-[1150px]:text-[1.08rem] xl:text-[1.22rem] 2xl:text-[1.36rem] uppercase tracking-tight transition-all duration-400 ${
+                isActive ? 'text-[#16A34A] opacity-100' : 'text-black/50 opacity-60'
+              }`}
+              style={isActive && !prefersReducedMotion ? {
+                animation: 'solutionCollisionPulse 1.6s ease-in-out infinite',
+                animationDelay: '320ms'
+              } : undefined}
+            >
+              {item.solution}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── MOBILE & TABLET VIEW (< 1024px) ─── */}
+      <div className="lg:hidden block w-full py-5 px-3 sm:px-4 z-10">
+        {/* Centered problem -> chevrons -> solution group (Numbers removed) */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3 text-center whitespace-nowrap overflow-x-auto no-scrollbar">
+          <span className="font-display font-bold text-[10.5px] min-[420px]:text-xs sm:text-base md:text-lg uppercase tracking-tight text-[#050505]">
+            {item.problem}
+          </span>
+          <AnimatedChevronArrow isActive={isActive} prefersReducedMotion={prefersReducedMotion} compact={true} />
+          <span
+            className={`font-display font-bold text-[10.5px] min-[420px]:text-xs sm:text-base md:text-lg uppercase tracking-tight transition-all duration-300 ${
+              isActive ? 'text-[#16A34A] opacity-100' : 'text-black/50 opacity-60'
+            }`}
+            style={isActive && !prefersReducedMotion ? {
+              animation: 'solutionCollisionPulse 1.6s ease-in-out infinite',
+              animationDelay: '320ms'
+            } : undefined}
+          >
+            {item.solution}
+          </span>
+        </div>
+
+        {/* Vertical accordion reveal for description */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateRows: isActive ? '1fr' : '0fr',
+            opacity: isActive ? 1 : 0,
+            marginTop: isActive ? '0.85rem' : '0rem',
+            transition: prefersReducedMotion ? 'none' : 'grid-template-rows 480ms cubic-bezier(0.16, 1, 0.3, 1), opacity 480ms ease, margin-top 480ms ease'
+          }}
+          aria-hidden={!isActive}
+        >
+          <div className="overflow-hidden flex flex-col items-center text-center px-2">
+            <p className="text-xs sm:text-sm text-black/75 leading-relaxed font-sans max-w-md">
+              {item.impact}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const heroBgRef = useRef(null);
   const heroContentRef = useRef(null);
@@ -15,6 +506,8 @@ export default function App() {
   const [activeCapability, setActiveCapability] = useState(0);
   const [activeWhy, setActiveWhy] = useState(0);
   const [activeProcess, setActiveProcess] = useState(0);
+  const [activeAboutPillar, setActiveAboutPillar] = useState(0);
+  const [activeSolutionRow, setActiveSolutionRow] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [activeHeroTab, setActiveHeroTab] = useState(0);
@@ -27,8 +520,21 @@ export default function App() {
   const mouseStartX = useRef(0);
   const isMouseDown = useRef(false);
   const hasMouseDragged = useRef(false);
-  const lastWheelTime = useRef(0);
   const navDirectionRef = useRef('next');
+  const lenisRef = useRef(null);
+
+  const scrollToSection = (e, href) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setMobileMenuOpen(false);
+    const target = document.querySelector(href);
+    if (!target) return;
+    if (lenisRef.current) {
+      lenisRef.current.scrollTo(target, { offset: -80 });
+    } else {
+      const top = target.getBoundingClientRect().top + window.pageYOffset - 80;
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  };
 
   // ─── 3D Rotating Ribbon Carousel for Methodology ─────────────────────────
   const [ribbonRotation, setRibbonRotation] = useState(0);
@@ -461,77 +967,173 @@ export default function App() {
       num: '01',
       title: 'BUSINESS FIRST',
       desc: 'We never write code for the sake of code. Every system, interface, and model is engineered to measurably drive revenue, efficiency, or competitive leverage.',
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop'
+      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1920&auto=format&fit=crop'
     },
     {
       num: '02',
       title: 'CUSTOM BY DESIGN',
       desc: 'No generic themes. No bloated off-the-shelf templates. Every digital platform and algorithm is tailor-built for your business domain and architectural requirements.',
-      image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=800&auto=format&fit=crop'
+      image: '/custom-by-design.png'
     },
     {
       num: '03',
       title: 'AI-NATIVE THINKING',
       desc: 'We architect systems designed from day one to harness artificial intelligence, structured data pipelines, and machine learning at scale.',
-      image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=800&auto=format&fit=crop'
+      image: '/ai-native-thinking.png'
     },
     {
       num: '04',
       title: 'LONG-TERM PARTNERSHIP',
       desc: 'We operate as an extension of your leadership team — constantly iterating, monitoring production infrastructure, and deploying evolutionary upgrades.',
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=800&auto=format&fit=crop'
+      image: '/long-term-partnership.png'
     }
   ];
 
-  // Methodology Showcase Cards matching reference image
+  // About Verhost Expanding Brand Pillars Carousel (SOVEREIGN, ENGINEERING, INTELLIGENCE, PARTNERSHIP)
+  const aboutPillars = [
+    {
+      id: 'sovereign',
+      title: 'SOVEREIGN',
+      num: '01',
+      category: 'Data & Cloud',
+      tag: '100% Client Custody',
+      desc: 'Independent sovereign cloud infrastructure with complete code and data ownership.',
+      gradient: 'linear-gradient(145deg, #0B0E0C 0%, #1A201C 100%)',
+      textColor: '#E0E6E2',
+      descColor: 'rgba(224, 230, 226, 0.88)',
+      accent: '#E0E6E2',
+      iconClass: 'bg-[#E0E6E2]/15 text-[#E0E6E2]',
+      badgeClass: 'bg-black/40 text-[#E0E6E2]/85 border-[#E0E6E2]/20',
+      collapsedText: 'text-[#E0E6E2]/75 group-hover:text-[#E0E6E2]',
+      collapsedDot: 'bg-[#E0E6E2]/40 group-hover:bg-[#E0E6E2]',
+      watermarkClass: 'text-[#E0E6E2]/[0.05]',
+      ringClass: 'ring-1 ring-[#E0E6E2]/20 shadow-2xl',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      )
+    },
+    {
+      id: 'engineering',
+      title: 'ENGINEERING',
+      num: '02',
+      category: 'Systems & Code',
+      tag: '< 12ms Latency',
+      desc: 'Sub-millisecond system architecture engineered for fault-tolerant scalability.',
+      gradient: 'linear-gradient(145deg, #0A291A 0%, #1B3B2B 100%)',
+      textColor: '#A3C6B1',
+      descColor: 'rgba(163, 198, 177, 0.90)',
+      accent: '#A3C6B1',
+      iconClass: 'bg-[#A3C6B1]/20 text-[#A3C6B1]',
+      badgeClass: 'bg-black/35 text-[#A3C6B1] border-[#A3C6B1]/25',
+      collapsedText: 'text-[#A3C6B1]/80 group-hover:text-[#A3C6B1]',
+      collapsedDot: 'bg-[#A3C6B1]/50 group-hover:bg-[#A3C6B1]',
+      watermarkClass: 'text-[#A3C6B1]/[0.07]',
+      ringClass: 'ring-1 ring-[#A3C6B1]/25 shadow-2xl',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+        </svg>
+      )
+    },
+    {
+      id: 'intelligence',
+      title: 'INTELLIGENCE',
+      num: '03',
+      category: 'AI & Autonomy',
+      tag: 'Autonomous Ops',
+      desc: 'Autonomous neural agent pipelines and cognitive models built into your operations.',
+      gradient: 'linear-gradient(145deg, #02B85B 0%, #0EE278 100%)',
+      textColor: '#082B1B',
+      descColor: 'rgba(8, 43, 27, 0.92)',
+      accent: '#082B1B',
+      iconClass: 'bg-[#082B1B]/15 text-[#082B1B]',
+      badgeClass: 'bg-[#082B1B]/15 text-[#082B1B] border-[#082B1B]/25',
+      collapsedText: 'text-[#082B1B]/85 group-hover:text-[#082B1B]',
+      collapsedDot: 'bg-[#082B1B]/50 group-hover:bg-[#082B1B]',
+      watermarkClass: 'text-[#082B1B]/[0.08]',
+      ringClass: 'ring-1 ring-[#082B1B]/25 shadow-[0_16px_40px_rgba(2,184,91,0.35)]',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      )
+    },
+    {
+      id: 'partnership',
+      title: 'PARTNERSHIP',
+      num: '04',
+      category: 'Value & Growth',
+      tag: '4.8x Compounding ROI',
+      desc: 'Principal-led engineering stewardship delivering transparent, persistent velocity.',
+      gradient: 'linear-gradient(145deg, #E4EFE8 0%, #F4F9F6 100%)',
+      textColor: '#0D2A1C',
+      descColor: 'rgba(13, 42, 28, 0.90)',
+      accent: '#0D2A1C',
+      iconClass: 'bg-[#0D2A1C]/15 text-[#0D2A1C]',
+      badgeClass: 'bg-[#0D2A1C]/12 text-[#0D2A1C] border-[#0D2A1C]/20',
+      collapsedText: 'text-[#0D2A1C]/85 group-hover:text-[#0D2A1C]',
+      collapsedDot: 'bg-[#0D2A1C]/50 group-hover:bg-[#0D2A1C]',
+      watermarkClass: 'text-[#0D2A1C]/[0.06]',
+      ringClass: 'ring-1 ring-[#0D2A1C]/20 shadow-[0_16px_40px_rgba(13,42,28,0.12)]',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      )
+    }
+  ];
+
+  // Methodology Showcase Cards - Curated Professional Phone-View Website Designs
   const methodologyCards = [
     {
-      id: 'citrus',
-      title: 'Beverage Architecture & Citrus Sky',
-      category: 'Brand Systems',
-      image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=800&auto=format&fit=crop'
+      id: 'fintech-cashapp',
+      title: 'Next-Gen Financial Architecture',
+      category: 'Fintech & Payments',
+      image: '/showcase/phone-fintech-cashapp.png'
     },
     {
-      id: 'apparel',
-      title: 'Haute Couture Product Engineering',
-      category: 'Physical Merchandising',
-      image: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?q=80&w=800&auto=format&fit=crop'
+      id: 'fashion-kith',
+      title: 'Haute Couture Editorial Lookbook',
+      category: 'Luxury E-Commerce',
+      image: '/showcase/phone-fashion-kith.png'
     },
     {
-      id: 'volcanic',
-      title: '3D Generative Product Assets',
-      category: 'Creative Computation',
-      image: 'https://images.unsplash.com/photo-1542385151-efd9000785a0?q=80&w=800&auto=format&fit=crop'
+      id: 'ai-linear',
+      title: 'AI Product Planning & Systems',
+      category: 'AI Software & SaaS',
+      image: '/showcase/phone-ai-linear.png'
     },
     {
-      id: 'can',
-      title: 'Sustainable Minimalist Packaging',
-      category: 'Industrial Systems',
-      image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800&auto=format&fit=crop'
+      id: 'health-whoop',
+      title: 'Human Performance Telemetry',
+      category: 'Biometrics & Healthtech',
+      image: '/showcase/phone-health-whoop.png'
     },
     {
-      id: 'streetwear',
-      title: 'Editorial Lookbooks & Visual Direction',
-      category: 'Art Direction',
-      image: 'https://images.unsplash.com/photo-1509967419530-da38b4704bc6?q=80&w=800&auto=format&fit=crop'
+      id: 'mobility-polestar',
+      title: 'Scandinavian Electric Mobility',
+      category: 'Clean Automotive',
+      image: '/showcase/phone-mobility-polestar.png'
     },
     {
-      id: 'tote',
-      title: 'Botanical Retail Merchandising',
-      category: 'Eco Merchandising',
-      image: 'https://images.unsplash.com/photo-1544816155-12df9643f363?q=80&w=800&auto=format&fit=crop'
+      id: 'creative-pitch',
+      title: 'Generative AI Presentation Suite',
+      category: 'Creative Intelligence',
+      image: '/showcase/phone-presentation-pitch.png'
     },
     {
-      id: 'berry',
-      title: 'High-Speed Product Dynamic CGI',
-      category: 'Motion Systems',
-      image: 'https://images.unsplash.com/photo-1553530666-ba11a7da3888?q=80&w=800&auto=format&fit=crop'
+      id: 'cloud-supabase',
+      title: 'Sovereign Cloud & Realtime Data',
+      category: 'Enterprise Infrastructure',
+      image: '/showcase/card-5-supabase.png'
     },
     {
-      id: 'architecture',
-      title: 'Sovereign Cloud Platform Infrastructure',
-      category: 'Enterprise Cloud',
-      image: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=800&auto=format&fit=crop'
+      id: 'audio-teenage',
+      title: 'Precision Synthesizer Engineering',
+      category: 'Industrial Tech & Hardware',
+      image: '/showcase/phone-audio-teenage.png'
     }
   ];
 
@@ -612,6 +1214,7 @@ export default function App() {
       orientation: 'vertical',
       smoothWheel: true,
     });
+    lenisRef.current = lenis;
 
     lenis.on('scroll', ScrollTrigger.update);
     const tickerCallback = (time) => {
@@ -704,10 +1307,12 @@ export default function App() {
       });
 
       // ─── CAPABILITIES SECTION: Header reveal ────────────────────────────────
-      gsap.from('#capabilities-header', {
-        opacity: 0, y: 40, duration: 0.9, ease: 'power3.out',
-        scrollTrigger: { trigger: '#capabilities', start: 'top 85%', toggleActions: 'play none none none' }
-      });
+      if (document.querySelector('#capabilities-header')) {
+        gsap.from('#capabilities-header', {
+          opacity: 0, y: 40, duration: 0.9, ease: 'power3.out',
+          scrollTrigger: { trigger: '#capabilities', start: 'top 85%', toggleActions: 'play none none none' }
+        });
+      }
 
       // ─── WHY VERHOST: Header + rows ─────────────────────────────────────────
       gsap.from('#why-header', {
@@ -809,6 +1414,7 @@ export default function App() {
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      lenisRef.current = null;
       lenis.destroy();
       gsap.ticker.remove(tickerCallback);
       ctx.revert();
@@ -865,15 +1471,16 @@ export default function App() {
           <nav className="hidden lg:flex items-center gap-1.5 text-[12px] font-mono font-bold tracking-widest uppercase" aria-label="Main Navigation">
             {[
               { name: 'SERVICES', href: '#services' },
+              { name: 'WORKS', href: '#works' },
               { name: 'SOLUTIONS', href: '#solutions' },
-              { name: 'CAPABILITIES', href: '#capabilities' },
               { name: 'ABOUT', href: '#about' },
               { name: 'CONTACT', href: '#contact' }
             ].map((link) => (
               <a 
                 key={link.name}
                 href={link.href}
-                className="px-4 py-2 rounded-full text-black/75 hover:text-[#16A34A] hover:bg-black/5 transition-all duration-200"
+                onClick={(e) => scrollToSection(e, link.href)}
+                className="px-4 py-2 rounded-full text-black/75 hover:text-[#16A34A] hover:bg-black/5 transition-all duration-200 cursor-pointer"
               >
                 {link.name}
               </a>
@@ -883,8 +1490,9 @@ export default function App() {
           {/* Right Action Button & Mobile Menu Toggle */}
           <div className="flex items-center gap-3">
             <a 
-              className="hidden sm:inline-flex group items-center gap-2 px-5 py-2.5 bg-[#16A34A] hover:bg-[#19C763] text-white rounded-md text-xs font-mono font-bold tracking-wider uppercase transition-all duration-300 shadow-[0_4px_20px_rgba(22,163,74,0.35)]" 
+              className="hidden sm:inline-flex group items-center gap-2 px-5 py-2.5 bg-[#16A34A] hover:bg-[#19C763] text-white rounded-md text-xs font-mono font-bold tracking-wider uppercase transition-all duration-300 shadow-[0_4px_20px_rgba(22,163,74,0.35)] cursor-pointer" 
               href="#contact"
+              onClick={(e) => scrollToSection(e, '#contact')}
             >
               <span>START A PROJECT</span>
               <span className="material-symbols-outlined text-sm transition-transform duration-200 group-hover:translate-x-1">arrow_forward</span>
@@ -903,15 +1511,26 @@ export default function App() {
         {/* Mobile Dropdown Menu in White Liquid Glass */}
         {mobileMenuOpen && (
           <div id="mobile-nav-menu" className="lg:hidden border-t border-black/10 bg-white/95 backdrop-blur-2xl px-6 py-6 flex flex-col space-y-3 font-mono text-xs font-bold uppercase tracking-wider text-[#050505] shadow-2xl">
-            <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#services" onClick={() => setMobileMenuOpen(false)}>SERVICES</a>
-            <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#solutions" onClick={() => setMobileMenuOpen(false)}>SOLUTIONS</a>
-            <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#capabilities" onClick={() => setMobileMenuOpen(false)}>CAPABILITIES</a>
-            <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#about" onClick={() => setMobileMenuOpen(false)}>ABOUT</a>
-            <a className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors" href="#contact" onClick={() => setMobileMenuOpen(false)}>CONTACT</a>
+            {[
+              { name: 'SERVICES', href: '#services' },
+              { name: 'WORKS', href: '#works' },
+              { name: 'SOLUTIONS', href: '#solutions' },
+              { name: 'ABOUT', href: '#about' },
+              { name: 'CONTACT', href: '#contact' }
+            ].map((link) => (
+              <a 
+                key={link.name} 
+                className="py-2.5 px-3 rounded hover:bg-black/5 border-b border-black/5 text-black/80 hover:text-[#16A34A] transition-colors cursor-pointer" 
+                href={link.href} 
+                onClick={(e) => scrollToSection(e, link.href)}
+              >
+                {link.name}
+              </a>
+            ))}
             <a 
-              className="inline-flex items-center justify-center gap-2 py-3 bg-[#16A34A] text-white rounded text-xs font-mono font-bold tracking-wider mt-2 shadow-md" 
+              className="inline-flex items-center justify-center gap-2 py-3 bg-[#16A34A] text-white rounded text-xs font-mono font-bold tracking-wider mt-2 shadow-md cursor-pointer" 
               href="#contact" 
-              onClick={() => setMobileMenuOpen(false)}
+              onClick={(e) => scrollToSection(e, '#contact')}
             >
               <span>START A PROJECT</span>
               <span className="material-symbols-outlined text-sm">arrow_forward</span>
@@ -1146,7 +1765,7 @@ export default function App() {
 
               {/* Right Column: Mobile Product Engineering Visual */}
               <div id="approach-right" className="lg:col-span-5 flex items-center justify-center">
-                <div className="relative w-full max-w-lg lg:max-w-none group">
+                <div className="relative w-full max-w-lg lg:max-w-none group scale-105 sm:scale-110 lg:scale-[1.16] xl:scale-[1.22] origin-center transition-transform duration-500">
                   <img 
                     alt="Sovereign Mobile Product Engineering Showcase" 
                     className="w-full h-auto object-contain filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.18)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
@@ -1505,6 +2124,161 @@ export default function App() {
           </div>
         </section>
 
+        {/* 9. WORKS / PROCESS (DEPLOYMENT METHODOLOGY & SHOWCASE) */}
+        <section 
+          id="works" 
+          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-28 sm:pt-36 lg:pt-44 pb-20 sm:pb-28 border-b border-black/10 select-none"
+          aria-label="Deployment Methodology — Behind the Architecture"
+        >
+          <div id="process" className="scroll-mt-28" />
+          <div id="work" className="scroll-mt-28" />
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
+            
+            {/* Header matching Reference Image */}
+            <div id="process-header" className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
+              <div className="inline-flex items-center gap-2 mb-3">
+                <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-[#16A34A]">BEHIND THE DESIGNS</span>
+              </div>
+              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-5 leading-[1.08]">
+                Curious What Else We've<br className="hidden sm:inline" /> Created?
+              </h2>
+              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-8">
+                Explore more brand identities, packaging, and digital design work in our extended portfolio.
+              </p>
+
+              {/* Pill Button with Green Circle Arrow matching reference */}
+              <div className="flex justify-center">
+                <a 
+                  href="#work"
+                  className="inline-flex items-center gap-3.5 pl-6 pr-2.5 py-2 rounded-full border border-black/15 bg-white text-sm font-sans font-medium text-[#050505] shadow-sm hover:shadow-md hover:border-black/30 transition-all group"
+                >
+                  <span>See more Projects</span>
+                  <span className="w-8 h-8 rounded-full bg-[#16A34A] flex items-center justify-center text-white transition-transform duration-300 group-hover:translate-x-0.5">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </span>
+                </a>
+              </div>
+            </div>
+
+            {/* 3D Rotating Concave Ribbon Stage */}
+            <div 
+              id="process-ribbon-stage"
+              className="relative w-full h-[340px] sm:h-[440px] lg:h-[480px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
+              style={{ perspective: isMobile ? '800px' : '1200px' }}
+              onMouseDown={handleRibbonMouseDown}
+              onMouseMove={handleRibbonMouseMove}
+              onMouseUp={handleRibbonMouseUp}
+              onMouseLeave={() => {
+                isRibbonHovered.current = false;
+                handleRibbonMouseUp();
+              }}
+              onMouseEnter={() => {
+                isRibbonHovered.current = true;
+              }}
+              onTouchStart={handleRibbonTouchStart}
+              onTouchMove={handleRibbonTouchMove}
+              onTouchEnd={handleRibbonTouchEnd}
+            >
+              {/* Left/Right Edge Soft Gradient Masks */}
+              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
+              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
+
+              {/* 3D Preserved Cylinder Container */}
+              <div 
+                className="relative w-full h-full flex items-center justify-center pointer-events-none"
+                style={{ transformStyle: 'preserve-3d' }}
+              >
+                {denseMethodologyCards.map((card, i) => {
+                  const N = denseMethodologyCards.length; // 24
+                  const baseAngle = i * (360 / N); // 15 deg per card
+                  const deg = ((baseAngle + ribbonRotation) % 360 + 360) % 360;
+                  const diff = deg > 180 ? deg - 360 : deg;
+
+                  // Hide back-facing cards outside the front 150-degree arc
+                  if (Math.abs(diff) > 75) return null;
+
+                  const rad = (diff * Math.PI) / 180;
+                  // Radius and depth scale with viewport
+                  const radiusX = isMobile ? 320 : 780;
+                  const depthZ = isMobile ? 120 : 270;
+                  const x = Math.sin(rad) * radiusX;
+                  const z = (1 - Math.cos(rad)) * depthZ;
+                  const y = -(1 - Math.cos(rad)) * (isMobile ? 12 : 24);
+                  const scale = (isMobile ? 0.70 : 0.72) + (1 - Math.cos(rad)) * (isMobile ? 0.46 : 0.52);
+                  const rotY = -diff * (isMobile ? 0.50 : 0.65);
+                  const rotZ = -diff * 0.035;
+                  const opacity = Math.max(0, Math.min(1, (75 - Math.abs(diff)) / 12));
+                  const zIndex = Math.round((1 - Math.cos(rad)) * 100);
+
+                  return (
+                    <div
+                      key={`${card.id}-${i}`}
+                      className="absolute w-[150px] sm:w-[185px] lg:w-[210px] h-[240px] sm:h-[300px] lg:h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.16)] bg-black/5 will-change-transform pointer-events-auto transition-shadow duration-300 hover:shadow-[0_25px_50px_rgba(0,0,0,0.25)] flex-shrink-0"
+                      style={{
+                        transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(${scale.toFixed(2)})`,
+                        zIndex,
+                        opacity: opacity.toFixed(2)
+                      }}
+                      onClick={() => {
+                        // Smoothly rotate clicked card to center
+                        const targetDeg = -(baseAngle % 360);
+                        const current = ribbonRotationRef.current;
+                        const diffAngle = ((((targetDeg - current) % 360) + 540) % 360) - 180;
+                        targetRibbonRotation.current = current + diffAngle;
+                      }}
+                    >
+                      <img 
+                        src={card.image} 
+                        alt={card.title} 
+                        width="210"
+                        height="340"
+                        className="w-full h-full object-cover object-top select-none pointer-events-none block"
+                        loading="eager"
+                        decoding="async"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 4 Methodology Pillars matching reference image */}
+            <div 
+              id="process-grid" 
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-10 sm:mt-16 pt-8 border-t border-black/10"
+            >
+              {methodologyPhases.map((phase, idx) => {
+                const isActive = activeMethodologyPhase === idx;
+                return (
+                  <button
+                    key={phase.num}
+                    type="button"
+                    onClick={() => rotateToPhase(idx)}
+                    className={`text-center group p-3 sm:p-4 rounded-xl transition-all cursor-pointer ${
+                      isActive ? 'bg-black/[0.03]' : 'hover:bg-black/[0.02]'
+                    }`}
+                  >
+                    <div className={`font-mono font-bold text-sm sm:text-base mb-1.5 transition-colors ${
+                      isActive ? 'text-[#16A34A]' : 'text-[#16A34A]/80 group-hover:text-[#16A34A]'
+                    }`}>
+                      {phase.num}
+                    </div>
+                    <div className="font-display font-medium text-base sm:text-lg text-[#050505] mb-1">
+                      {phase.title}
+                    </div>
+                    <p className="text-xs text-black/55 font-sans leading-relaxed line-clamp-2">
+                      {phase.desc}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
+
+          </div>
+        </section>
+
         {/* 5. STRONG BLACK TRANSITION STATEMENT (WITH CINEMATIC NEURAL VISUAL IN BLANK SPACE) */}
         <section id="transition-statement" className="w-full bg-[#050505] text-white px-6 sm:px-10 lg:px-16 py-36 sm:py-44 border-y border-white/10 relative overflow-hidden">
           {/* Subtle Ambient Emerald Glow */}
@@ -1690,10 +2464,10 @@ export default function App() {
         </section>
 
         {/* 6. BUSINESS PROBLEM -> SOLUTION TRANSFORMATION */}
-        <section id="solutions" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 py-32 sm:py-40 border-b border-black/10">
+        <section id="solutions" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 pt-20 sm:pt-28 pb-8 sm:pb-12">
           <div className="max-w-[1360px] mx-auto">
             
-            <div id="solutions-header" className="max-w-4xl mb-20">
+            <div id="solutions-header" className="max-w-4xl mb-14 sm:mb-16">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">PROBLEM RESOLUTION MATRIX</span>
               </div>
@@ -1705,254 +2479,27 @@ export default function App() {
               </p>
             </div>
 
-            {/* Transformation Matrix Rows */}
-            <div className="divide-y divide-black/10 border-y border-black/10">
+            {/* Transformation Matrix Rows (Card effect on hover, no separation lines) */}
+            <div className="flex flex-col gap-2.5 sm:gap-3.5">
               {transformations.map((item, index) => (
-                <div 
+                <TransformationRow
                   key={index}
-                  className="transformation-row py-8 sm:py-10 grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center group hover:bg-[#FAFAF7] transition-colors px-4 -mx-4 rounded"
-                >
-                  {/* Problem -> Solution Pair */}
-                  <div className="lg:col-span-6 flex flex-wrap items-center gap-3 sm:gap-5">
-                    <span className="font-mono text-xs text-black/40 font-bold">0{index + 1}</span>
-                    <span className="font-display font-bold text-lg sm:text-2xl uppercase tracking-tight text-black/50 group-hover:text-black transition-colors">
-                      {item.problem}
-                    </span>
-                    <span className="material-symbols-outlined text-[#16A34A] text-xl transition-transform duration-300 group-hover:translate-x-2">
-                      east
-                    </span>
-                    <span className="font-display font-bold text-lg sm:text-2xl uppercase tracking-tight text-[#050505] group-hover:text-[#16A34A] transition-colors">
-                      {item.solution}
-                    </span>
-                  </div>
-
-                  {/* Impact Statement */}
-                  <div className="lg:col-span-4 text-xs sm:text-sm text-black/70 leading-relaxed font-sans">
-                    {item.impact}
-                  </div>
-
-                  {/* Verified Metric Badge */}
-                  <div className="lg:col-span-2 lg:text-right">
-                    <span className="inline-block px-3 py-1 bg-black/5 font-mono text-[11px] font-bold text-[#16A34A] uppercase tracking-wider rounded border border-black/5">
-                      {item.metric}
-                    </span>
-                  </div>
-                </div>
+                  item={item}
+                  index={index}
+                  isActive={activeSolutionRow === index}
+                  onActivate={() => setActiveSolutionRow(index)}
+                  onDeactivate={() => setActiveSolutionRow((curr) => (curr === index ? null : curr))}
+                  onToggle={() => setActiveSolutionRow((curr) => (curr === index ? null : index))}
+                  prefersReducedMotion={prefersReducedMotion}
+                />
               ))}
             </div>
 
           </div>
         </section>
 
-        {/* 8. WHY VERHOST (BUILT DIFFERENTLY + HOVER VISUAL PREVIEW) */}
-        <section id="why" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 py-32 sm:py-40 border-b border-black/10">
-          <div className="max-w-[1360px] mx-auto">
-            
-            <div id="why-header" className="max-w-3xl mb-20">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHY VERHOST</span>
-              </div>
-              <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-4">
-                BUILT DIFFERENTLY.
-              </h2>
-              <p className="text-base sm:text-lg text-black/60">
-                Four fundamental operating principles that ensure technical rigor and commercial victory.
-              </p>
-            </div>
-
-            {/* Numbered Rows with Thin Hairline Dividers */}
-            <div id="why-list" className="divide-y divide-black/10 border-y border-black/10">
-              {principles.map((pr, idx) => {
-                const isSelected = activeWhy === idx;
-                return (
-                  <div 
-                    key={pr.num}
-                    onMouseEnter={() => setActiveWhy(idx)}
-                    onClick={() => setActiveWhy(idx)}
-                    className={`why-row py-10 sm:py-12 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center cursor-pointer transition-colors px-6 -mx-6 rounded ${
-                      isSelected ? 'bg-[#FAFAF7] shadow-sm' : 'hover:bg-[#FAFAF7]/60'
-                    }`}
-                  >
-                    <div className="lg:col-span-1 font-mono text-xs font-bold text-[#16A34A]">
-                      {pr.num}
-                    </div>
-                    <div className="lg:col-span-4">
-                      <h3 className={`font-display font-bold text-2xl sm:text-3xl uppercase tracking-tight transition-colors ${
-                        isSelected ? 'text-[#16A34A]' : 'text-[#050505]'
-                      }`}>
-                        {pr.title}
-                      </h3>
-                    </div>
-                    <div className="lg:col-span-5">
-                      <p className="text-base sm:text-lg text-black/70 leading-relaxed font-normal">
-                        {pr.desc}
-                      </p>
-                    </div>
-                    <div className="lg:col-span-2 hidden lg:flex justify-end">
-                      <div className="w-20 h-14 rounded overflow-hidden border border-black/10 relative">
-                        <img alt={`VERHOST ${pr.title}`} src={pr.image} className="w-full h-full object-cover filter grayscale" />
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-          </div>
-        </section>
-
-        {/* 9. PROCESS (DEPLOYMENT METHODOLOGY) — 3D ROTATING CONCAVE RIBBON MATCHING REFERENCE IMAGE */}
-        <section 
-          id="process" 
-          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-28 sm:pt-36 lg:pt-44 pb-20 sm:pb-28 border-b border-black/10 select-none"
-          aria-label="Deployment Methodology — Behind the Architecture"
-        >
-          <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
-            
-            {/* Header matching Reference Image */}
-            <div id="process-header" className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
-              <div className="inline-flex items-center gap-2 mb-3">
-                <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-[#16A34A]">BEHIND THE DESIGNS</span>
-              </div>
-              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-5 leading-[1.08]">
-                Curious What Else We've<br className="hidden sm:inline" /> Created?
-              </h2>
-              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-8">
-                Explore more brand identities, packaging, and digital design work in our extended portfolio.
-              </p>
-
-              {/* Pill Button with Green Circle Arrow matching reference */}
-              <div className="flex justify-center">
-                <a 
-                  href="#work"
-                  className="inline-flex items-center gap-3.5 pl-6 pr-2.5 py-2 rounded-full border border-black/15 bg-white text-sm font-sans font-medium text-[#050505] shadow-sm hover:shadow-md hover:border-black/30 transition-all group"
-                >
-                  <span>See more Projects</span>
-                  <span className="w-8 h-8 rounded-full bg-[#16A34A] flex items-center justify-center text-white transition-transform duration-300 group-hover:translate-x-0.5">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </span>
-                </a>
-              </div>
-            </div>
-
-            {/* 3D Rotating Concave Ribbon Stage */}
-            <div 
-              id="process-ribbon-stage"
-              className="relative w-full h-[340px] sm:h-[440px] lg:h-[480px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
-              style={{ perspective: isMobile ? '800px' : '1200px' }}
-              onMouseDown={handleRibbonMouseDown}
-              onMouseMove={handleRibbonMouseMove}
-              onMouseUp={handleRibbonMouseUp}
-              onMouseLeave={() => {
-                isRibbonHovered.current = false;
-                handleRibbonMouseUp();
-              }}
-              onMouseEnter={() => {
-                isRibbonHovered.current = true;
-              }}
-              onTouchStart={handleRibbonTouchStart}
-              onTouchMove={handleRibbonTouchMove}
-              onTouchEnd={handleRibbonTouchEnd}
-            >
-              {/* Left/Right Edge Soft Gradient Masks */}
-              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
-              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
-
-              {/* 3D Preserved Cylinder Container */}
-              <div 
-                className="relative w-full h-full flex items-center justify-center pointer-events-none"
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                {denseMethodologyCards.map((card, i) => {
-                  const N = denseMethodologyCards.length; // 24
-                  const baseAngle = i * (360 / N); // 15 deg per card
-                  const deg = ((baseAngle + ribbonRotation) % 360 + 360) % 360;
-                  const diff = deg > 180 ? deg - 360 : deg;
-
-                  // Hide back-facing cards outside the front 150-degree arc
-                  if (Math.abs(diff) > 75) return null;
-
-                  const rad = (diff * Math.PI) / 180;
-                  // Radius and depth scale with viewport
-                  const radiusX = isMobile ? 320 : 780;
-                  const depthZ = isMobile ? 120 : 270;
-                  const x = Math.sin(rad) * radiusX;
-                  const z = (1 - Math.cos(rad)) * depthZ;
-                  const y = -(1 - Math.cos(rad)) * (isMobile ? 12 : 24);
-                  const scale = (isMobile ? 0.70 : 0.72) + (1 - Math.cos(rad)) * (isMobile ? 0.46 : 0.52);
-                  const rotY = -diff * (isMobile ? 0.50 : 0.65);
-                  const rotZ = -diff * 0.035;
-                  const opacity = Math.max(0, Math.min(1, (75 - Math.abs(diff)) / 12));
-                  const zIndex = Math.round((1 - Math.cos(rad)) * 100);
-
-                  return (
-                    <div
-                      key={`${card.id}-${i}`}
-                      className="absolute w-[150px] sm:w-[185px] lg:w-[210px] h-[240px] sm:h-[300px] lg:h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.16)] bg-black/5 will-change-transform pointer-events-auto transition-shadow duration-300 hover:shadow-[0_25px_50px_rgba(0,0,0,0.25)]"
-                      style={{
-                        transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(${scale.toFixed(2)})`,
-                        zIndex,
-                        opacity: opacity.toFixed(2)
-                      }}
-                      onClick={() => {
-                        // Smoothly rotate clicked card to center
-                        const targetDeg = -(baseAngle % 360);
-                        const current = ribbonRotationRef.current;
-                        const diffAngle = ((((targetDeg - current) % 360) + 540) % 360) - 180;
-                        targetRibbonRotation.current = current + diffAngle;
-                      }}
-                    >
-                      <img 
-                        src={card.image} 
-                        alt={card.title} 
-                        className="w-full h-full object-cover select-none pointer-events-none"
-                        loading="eager"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4 Methodology Pillars matching reference image */}
-            <div 
-              id="process-grid" 
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-10 sm:mt-16 pt-8 border-t border-black/10"
-            >
-              {methodologyPhases.map((phase, idx) => {
-                const isActive = activeMethodologyPhase === idx;
-                return (
-                  <button
-                    key={phase.num}
-                    type="button"
-                    onClick={() => rotateToPhase(idx)}
-                    className={`text-center group p-3 sm:p-4 rounded-xl transition-all cursor-pointer ${
-                      isActive ? 'bg-black/[0.03]' : 'hover:bg-black/[0.02]'
-                    }`}
-                  >
-                    <div className={`font-mono font-bold text-sm sm:text-base mb-1.5 transition-colors ${
-                      isActive ? 'text-[#16A34A]' : 'text-[#16A34A]/80 group-hover:text-[#16A34A]'
-                    }`}>
-                      {phase.num}
-                    </div>
-                    <div className="font-display font-medium text-base sm:text-lg text-[#050505] mb-1">
-                      {phase.title}
-                    </div>
-                    <p className="text-xs text-black/55 font-sans leading-relaxed line-clamp-2">
-                      {phase.desc}
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-
-          </div>
-        </section>
-
         {/* 10. ABOUT VERHOST (STRONG COMPANY STORY + ARCHITECTURAL IMAGERY) */}
-        <section id="about" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 py-32 sm:py-40 border-b border-black/10">
+        <section id="about" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 pt-8 sm:pt-12 pb-28 sm:pb-36 border-b border-black/10">
           <div className="max-w-[1360px] mx-auto">
             
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
@@ -1992,21 +2539,140 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Single Large Architectural Visual */}
-              <div id="about-image-wrap" className="lg:col-span-6">
-                <div className="aspect-[4/3] rounded-md overflow-hidden border border-black/10 shadow-sm relative bg-black">
-                  <img 
-                    alt="VERHOST Global Technology Innovation Center and Architecture"
-                    className="w-full h-full object-cover filter grayscale-[15%]"
-                    src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1600&auto=format&fit=crop"
-                    loading="lazy"
-                  />
-                  <div className="absolute bottom-4 right-4 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded border border-white/20 text-white font-mono text-[10px] uppercase tracking-wider">
-                    VERHOST GLOBAL INFRASTRUCTURE
-                  </div>
+              {/* Expanding Horizontal Accordion Carousel matching reference design */}
+              <div id="about-image-wrap" className="lg:col-span-6 w-full">
+                <div 
+                  className="w-full h-[400px] sm:h-[460px] lg:h-[490px] p-2.5 sm:p-3.5 bg-[#0C0C0D] rounded-2xl sm:rounded-3xl border border-black/10 shadow-2xl flex gap-2 sm:gap-3 overflow-hidden select-none"
+                  role="region"
+                  aria-label="About Verhost Brand Pillars Carousel"
+                >
+                  {aboutPillars.map((pillar, idx) => {
+                    const isActive = activeAboutPillar === idx;
+                    return (
+                      <div
+                        key={pillar.id}
+                        role="tab"
+                        aria-selected={isActive}
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setActiveAboutPillar(idx);
+                          }
+                        }}
+                        onMouseEnter={() => setActiveAboutPillar(idx)}
+                        onClick={() => setActiveAboutPillar(idx)}
+                        style={{ background: pillar.gradient }}
+                        className={`group relative rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col justify-between ${
+                          isActive 
+                            ? `flex-[4.2] sm:flex-[4.8] min-w-[210px] ${pillar.ringClass || 'shadow-2xl ring-1 ring-white/15'}` 
+                            : 'flex-[0.7] sm:flex-[0.75] min-w-[48px] sm:min-w-[56px] hover:brightness-110 opacity-85 hover:opacity-100'
+                        }`}
+                      >
+                        {/* Faded Background Geometric Architectural Watermark */}
+                        <div className="absolute -top-6 -right-6 w-36 h-36 sm:w-48 sm:h-48 rounded-full bg-white/[0.04] blur-xl pointer-events-none" />
+                        <div className={`absolute top-2 right-2 ${pillar.watermarkClass || 'text-white/[0.06]'} font-display font-black text-7xl sm:text-9xl select-none pointer-events-none leading-none overflow-hidden`}>
+                          {pillar.num}
+                        </div>
+
+                        {/* Top Area: Icon badge & Number */}
+                        <div className="relative z-10 p-3 sm:p-4 flex items-center justify-between w-full">
+                          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-transform duration-300 ${
+                            pillar.iconClass || (isActive ? 'bg-white/20 text-white shadow-md scale-105' : 'bg-white/10 text-white/90 group-hover:scale-105')
+                          } ${isActive ? 'shadow-md scale-105' : 'group-hover:scale-105'}`}>
+                            {pillar.icon}
+                          </div>
+
+                          {isActive && (
+                            <div className="flex items-center gap-2">
+                              <span className={`font-mono text-[10px] sm:text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${pillar.badgeClass || 'text-white/70 bg-black/25 border-white/10'}`}>
+                                {pillar.num} / 04
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Middle Area: Tilted Dynamic Typography (Active) vs Vertical Label (Collapsed) */}
+                        <div className="relative z-10 flex-1 flex items-center justify-start overflow-hidden px-3 sm:px-4">
+                          {isActive ? (
+                            <div className="w-full text-left pl-1 sm:pl-2 pr-1 transition-all duration-500">
+                              <div 
+                                style={{ color: pillar.textColor }}
+                                className="font-display font-black text-[26px] sm:text-[34px] lg:text-[40px] xl:text-[42.5px] tracking-tight uppercase leading-[0.95] transform -rotate-2 transition-transform duration-500 whitespace-nowrap"
+                              >
+                                {pillar.title}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="h-full w-full flex items-center justify-center">
+                              <span 
+                                className={`font-display font-extrabold text-xs sm:text-sm tracking-[0.22em] uppercase transition-colors whitespace-nowrap select-none ${pillar.collapsedText || 'text-white/85 group-hover:text-white'}`}
+                                style={{
+                                  writingMode: 'vertical-rl',
+                                  transform: 'rotate(180deg)'
+                                }}
+                              >
+                                {pillar.title}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Bottom Area: Narrative Details (Active) vs Indicator Dot (Collapsed) */}
+                        <div className="relative z-10 p-3.5 sm:p-5">
+                          {isActive ? (
+                            <div className="transition-all duration-300">
+                              <p 
+                                style={{ color: pillar.descColor }}
+                                className="text-[13px] sm:text-[14.5px] leading-relaxed font-sans max-w-sm"
+                              >
+                                {pillar.desc}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className="flex justify-center pb-1">
+                              <span className={`w-1.5 h-1.5 rounded-full transition-colors ${pillar.collapsedDot || 'bg-white/40 group-hover:bg-white'}`} />
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
+            </div>
+
+          </div>
+        </section>
+
+        {/* 8. WHY VERHOST (BUILT DIFFERENTLY + HOVER VISUAL PREVIEW) */}
+        <section id="why" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 py-32 sm:py-40 border-b border-black/10">
+          <div className="max-w-[1360px] mx-auto">
+            
+            <div id="why-header" className="max-w-3xl mb-20">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHY VERHOST</span>
+              </div>
+              <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-4">
+                BUILT DIFFERENTLY.
+              </h2>
+              <p className="text-base sm:text-lg text-black/60">
+                Four fundamental operating principles that ensure technical rigor and commercial victory.
+              </p>
+            </div>
+
+            {/* Numbered Rows with Full-Row Parallax Image Rectangles */}
+            <div id="why-list" className="divide-y divide-black/10 border-y border-black/10">
+              {principles.map((pr, idx) => (
+                <WhyPrincipleRow
+                  key={pr.num}
+                  pr={pr}
+                  idx={idx}
+                  isActive={activeWhy === idx}
+                  onActivate={setActiveWhy}
+                />
+              ))}
             </div>
 
           </div>
@@ -2299,11 +2965,11 @@ export default function App() {
             {/* Navigation Links */}
             <div className="footer-col lg:col-span-3 space-y-3 font-mono text-xs">
               <div className="text-[11px] text-white/40 font-bold uppercase tracking-wider mb-4">VERHOST INDEX</div>
-              <div><a href="#services" className="text-white/70 hover:text-[#19C763] transition-colors">SERVICES</a></div>
-              <div><a href="#solutions" className="text-white/70 hover:text-[#19C763] transition-colors">SOLUTIONS</a></div>
-              <div><a href="#capabilities" className="text-white/70 hover:text-[#19C763] transition-colors">CAPABILITIES</a></div>
-              <div><a href="#about" className="text-white/70 hover:text-[#19C763] transition-colors">ABOUT</a></div>
-              <div><a href="#contact" className="text-white/70 hover:text-[#19C763] transition-colors">CONTACT</a></div>
+              <div><a href="#services" onClick={(e) => scrollToSection(e, '#services')} className="text-white/70 hover:text-[#19C763] transition-colors cursor-pointer">SERVICES</a></div>
+              <div><a href="#works" onClick={(e) => scrollToSection(e, '#works')} className="text-white/70 hover:text-[#19C763] transition-colors cursor-pointer">WORKS</a></div>
+              <div><a href="#solutions" onClick={(e) => scrollToSection(e, '#solutions')} className="text-white/70 hover:text-[#19C763] transition-colors cursor-pointer">SOLUTIONS</a></div>
+              <div><a href="#about" onClick={(e) => scrollToSection(e, '#about')} className="text-white/70 hover:text-[#19C763] transition-colors cursor-pointer">ABOUT</a></div>
+              <div><a href="#contact" onClick={(e) => scrollToSection(e, '#contact')} className="text-white/70 hover:text-[#19C763] transition-colors cursor-pointer">CONTACT</a></div>
             </div>
 
             {/* Social Channels */}

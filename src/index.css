@@ -99,3 +99,71 @@
 .font-butler {
   font-family: 'Butler', Georgia, 'Times New Roman', serif;
 }
+
+/* ─── CONTINUOUS DIRECTIONAL CHEVRON FLOW ANIMATION (3 ENLARGED CHEVRONS) ─── */
+@keyframes chevronPulseDesktop {
+  0% {
+    opacity: 0.3;
+    transform: translateX(0px);
+  }
+  28% {
+    opacity: 1;
+    transform: translateX(4.5px);
+  }
+  55% {
+    opacity: 0.48;
+    transform: translateX(1.5px);
+  }
+  80%, 100% {
+    opacity: 0.3;
+    transform: translateX(0px);
+  }
+}
+
+@keyframes chevronPulseCompact {
+  0% {
+    opacity: 0.3;
+    transform: translateX(0px);
+  }
+  28% {
+    opacity: 1;
+    transform: translateX(3px);
+  }
+  55% {
+    opacity: 0.48;
+    transform: translateX(1px);
+  }
+  80%, 100% {
+    opacity: 0.3;
+    transform: translateX(0px);
+  }
+}
+
+/* ─── CARD COLLIDING UI ANIMATION (ENERGY FLOW MATCHING ARROWS) ─── */
+@keyframes cardCollidingSheen {
+  0% {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+  25% {
+    opacity: 0.8;
+  }
+  65% {
+    opacity: 0.7;
+    transform: translateX(45%);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+
+@keyframes solutionCollisionPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.03);
+    filter: drop-shadow(0 0 10px rgba(22, 163, 74, 0.3));
+  }
+}
