@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { CinematicCurvedGallery } from './components/CinematicCurvedGallery';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -536,96 +537,13 @@ export default function App() {
     }
   };
 
-  // ─── 3D Rotating Ribbon Carousel for Methodology ─────────────────────────
-  const [ribbonRotation, setRibbonRotation] = useState(0);
-  const ribbonRotationRef = useRef(0);
-  const isRibbonDragging = useRef(false);
-  const ribbonStartX = useRef(0);
-  const ribbonStartRotation = useRef(0);
-  const isRibbonHovered = useRef(false);
-  const targetRibbonRotation = useRef(null);
-  const ribbonAnimFrame = useRef(null);
+  // ─── Cinematic Curved Gallery for Methodology ─────────────────────────────
+  const galleryRef = useRef(null);
   const [activeMethodologyPhase, setActiveMethodologyPhase] = useState(0);
 
-  // Ribbon Continuous Rotation & Physics Loop
-  useEffect(() => {
-    let lastTime = performance.now();
-
-    const loop = (time) => {
-      const dt = Math.min(50, time - lastTime);
-      lastTime = time;
-
-      if (targetRibbonRotation.current !== null) {
-        const diff = targetRibbonRotation.current - ribbonRotationRef.current;
-        if (Math.abs(diff) < 0.15) {
-          ribbonRotationRef.current = targetRibbonRotation.current;
-          targetRibbonRotation.current = null;
-        } else {
-          ribbonRotationRef.current += diff * 0.12;
-        }
-      } else if (!isRibbonDragging.current) {
-        // Continuous smooth auto-rotation (~0.13 deg per frame at 60fps)
-        const speed = isRibbonHovered.current ? 0.04 : 0.13;
-        ribbonRotationRef.current = (ribbonRotationRef.current + speed * (dt / 16.666)) % 360;
-      }
-
-      setRibbonRotation(ribbonRotationRef.current);
-
-      // Compute active phase (4 phases, each spans 90 degrees)
-      const norm = ((ribbonRotationRef.current % 360) + 360) % 360;
-      const computedPhase = Math.floor((360 - norm + 45) / 90) % 4;
-      setActiveMethodologyPhase(computedPhase);
-
-      ribbonAnimFrame.current = requestAnimationFrame(loop);
-    };
-
-    ribbonAnimFrame.current = requestAnimationFrame(loop);
-    return () => {
-      if (ribbonAnimFrame.current) cancelAnimationFrame(ribbonAnimFrame.current);
-    };
-  }, []);
-
-  const handleRibbonMouseDown = (e) => {
-    isRibbonDragging.current = true;
-    ribbonStartX.current = e.clientX;
-    ribbonStartRotation.current = ribbonRotationRef.current;
-    targetRibbonRotation.current = null;
-  };
-
-  const handleRibbonMouseMove = (e) => {
-    if (!isRibbonDragging.current) return;
-    const deltaX = e.clientX - ribbonStartX.current;
-    ribbonRotationRef.current = (ribbonStartRotation.current - deltaX * 0.28) % 360;
-  };
-
-  const handleRibbonMouseUp = () => {
-    isRibbonDragging.current = false;
-  };
-
-  const handleRibbonTouchStart = (e) => {
-    if (e.touches.length === 1) {
-      isRibbonDragging.current = true;
-      ribbonStartX.current = e.touches[0].clientX;
-      ribbonStartRotation.current = ribbonRotationRef.current;
-      targetRibbonRotation.current = null;
-    }
-  };
-
-  const handleRibbonTouchMove = (e) => {
-    if (!isRibbonDragging.current || e.touches.length !== 1) return;
-    const deltaX = e.touches[0].clientX - ribbonStartX.current;
-    ribbonRotationRef.current = (ribbonStartRotation.current - deltaX * 0.32) % 360;
-  };
-
-  const handleRibbonTouchEnd = () => {
-    isRibbonDragging.current = false;
-  };
-
   const rotateToPhase = (phaseIdx) => {
-    const targetDeg = -(phaseIdx * 90);
-    const current = ribbonRotationRef.current;
-    const diff = ((((targetDeg - current) % 360) + 540) % 360) - 180;
-    targetRibbonRotation.current = current + diff;
+    setActiveMethodologyPhase(phaseIdx);
+    galleryRef.current?.scrollToPhase(phaseIdx);
   };
 
   useEffect(() => {
@@ -643,6 +561,77 @@ export default function App() {
       mediaQuery.removeEventListener('change', motionHandler);
     };
   }, []);
+
+  // ─── Scroll-Triggered Entrance Animations (Matrix & Four-Panel Showcase) ───
+  const matrixRef = useRef(null);
+  const [matrixVisible, setMatrixVisible] = useState(false);
+  const [matrixAnimationComplete, setMatrixAnimationComplete] = useState(false);
+
+  const showcaseRef = useRef(null);
+  const [showcaseVisible, setShowcaseVisible] = useState(false);
+  const [showcaseAnimationComplete, setShowcaseAnimationComplete] = useState(false);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setMatrixVisible(true);
+      setMatrixAnimationComplete(true);
+      return;
+    }
+    const el = matrixRef.current;
+    if (!el) return;
+
+    let timer = null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setMatrixVisible(true);
+          observer.disconnect();
+          timer = setTimeout(() => {
+            setMatrixAnimationComplete(true);
+          }, 1150);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [prefersReducedMotion]);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setShowcaseVisible(true);
+      setShowcaseAnimationComplete(true);
+      return;
+    }
+    const el = showcaseRef.current;
+    if (!el) return;
+
+    let timer = null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setShowcaseVisible(true);
+          observer.disconnect();
+          timer = setTimeout(() => {
+            setShowcaseAnimationComplete(true);
+          }, 1000);
+        }
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
+    );
+
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      if (timer) clearTimeout(timer);
+    };
+  }, [prefersReducedMotion]);
 
   const goToPrevService = () => {
     navDirectionRef.current = 'prev';
@@ -973,19 +962,19 @@ export default function App() {
       num: '02',
       title: 'CUSTOM BY DESIGN',
       desc: 'No generic themes. No bloated off-the-shelf templates. Every digital platform and algorithm is tailor-built for your business domain and architectural requirements.',
-      image: '/custom-by-design.png'
+      image: '/custom-by-design.webp'
     },
     {
       num: '03',
       title: 'AI-NATIVE THINKING',
       desc: 'We architect systems designed from day one to harness artificial intelligence, structured data pipelines, and machine learning at scale.',
-      image: '/ai-native-thinking.png'
+      image: '/ai-native-thinking.webp'
     },
     {
       num: '04',
       title: 'LONG-TERM PARTNERSHIP',
       desc: 'We operate as an extension of your leadership team — constantly iterating, monitoring production infrastructure, and deploying evolutionary upgrades.',
-      image: '/long-term-partnership.png'
+      image: '/long-term-partnership.webp'
     }
   ];
 
@@ -1091,49 +1080,57 @@ export default function App() {
       id: 'fintech-cashapp',
       title: 'Next-Gen Financial Architecture',
       category: 'Fintech & Payments',
-      image: '/showcase/phone-fintech-cashapp.png'
+      image: '/showcase/phone-fintech-cashapp.webp',
+      fallback: '/showcase/phone-fintech-cashapp.png'
     },
     {
       id: 'fashion-kith',
       title: 'Haute Couture Editorial Lookbook',
       category: 'Luxury E-Commerce',
-      image: '/showcase/phone-fashion-kith.png'
+      image: '/showcase/phone-fashion-kith.webp',
+      fallback: '/showcase/phone-fashion-kith.png'
     },
     {
       id: 'ai-linear',
       title: 'AI Product Planning & Systems',
       category: 'AI Software & SaaS',
-      image: '/showcase/phone-ai-linear.png'
+      image: '/showcase/phone-ai-linear.webp',
+      fallback: '/showcase/phone-ai-linear.png'
     },
     {
       id: 'health-whoop',
       title: 'Human Performance Telemetry',
       category: 'Biometrics & Healthtech',
-      image: '/showcase/phone-health-whoop.png'
+      image: '/showcase/phone-health-whoop.webp',
+      fallback: '/showcase/phone-health-whoop.png'
     },
     {
       id: 'mobility-polestar',
       title: 'Scandinavian Electric Mobility',
       category: 'Clean Automotive',
-      image: '/showcase/phone-mobility-polestar.png'
+      image: '/showcase/phone-mobility-polestar.webp',
+      fallback: '/showcase/phone-mobility-polestar.png'
     },
     {
       id: 'creative-pitch',
       title: 'Generative AI Presentation Suite',
       category: 'Creative Intelligence',
-      image: '/showcase/phone-presentation-pitch.png'
+      image: '/showcase/phone-presentation-pitch.webp',
+      fallback: '/showcase/phone-presentation-pitch.png'
     },
     {
       id: 'cloud-supabase',
       title: 'Sovereign Cloud & Realtime Data',
       category: 'Enterprise Infrastructure',
-      image: '/showcase/card-5-supabase.png'
+      image: '/showcase/card-5-supabase.webp',
+      fallback: '/showcase/card-5-supabase.png'
     },
     {
       id: 'audio-teenage',
       title: 'Precision Synthesizer Engineering',
       category: 'Industrial Tech & Hardware',
-      image: '/showcase/phone-audio-teenage.png'
+      image: '/showcase/phone-audio-teenage.webp',
+      fallback: '/showcase/phone-audio-teenage.png'
     }
   ];
 
@@ -1460,7 +1457,11 @@ export default function App() {
             <img 
               alt="VERHOST Official Logo" 
               className="h-8 sm:h-9 w-auto object-contain transition-transform duration-300 group-hover:scale-105" 
-              src="/verhost-logo.png"
+              src="/verhost-logo.webp"
+              width="54"
+              height="36"
+              loading="eager"
+              decoding="async"
             />
             <span className="font-display font-bold text-lg sm:text-xl tracking-tight text-[#050505] uppercase">
               VERHOST
@@ -1554,7 +1555,12 @@ export default function App() {
               <img 
                 alt="VERHOST Global Headquarters — Premier Sovereign Digital & AI Engineering Agency in Downtown Manhattan, New York" 
                 className="w-full h-full object-cover filter brightness-[0.68] contrast-[1.12] saturate-[1.05]" 
-                src="/hero-bg.jpg"
+                src="/hero-bg.webp"
+                fetchPriority="high"
+                loading="eager"
+                decoding="async"
+                width="1376"
+                height="768"
               />
               {/* Layered US Agency Luxury Obsidian & Emerald Vignettes */}
               <div className="absolute inset-0 bg-gradient-to-b from-[#050806]/90 via-[#050806]/55 to-[#050806]/98"></div>
@@ -1666,9 +1672,13 @@ export default function App() {
               {/* Video / Reel Presentation Area */}
               <div className="relative aspect-[16/9] w-full bg-black overflow-hidden flex items-center justify-center">
                 <img 
-                  src="/hero-bg.jpg" 
+                  src="/hero-bg.webp" 
                   alt="Agency Reel Preview" 
                   className="w-full h-full object-cover filter brightness-[0.7] contrast-[1.2]"
+                  loading="lazy"
+                  decoding="async"
+                  width="1376"
+                  height="768"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
                 
@@ -1769,8 +1779,11 @@ export default function App() {
                   <img 
                     alt="Sovereign Mobile Product Engineering Showcase" 
                     className="w-full h-auto object-contain filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.18)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-                    src="/mobile-showcase-transparent.png"
+                    src="/mobile-showcase-transparent.webp"
+                    width="1003"
+                    height="711"
                     loading="lazy"
+                    decoding="async"
                   />
                 </div>
               </div>
@@ -2127,22 +2140,22 @@ export default function App() {
         {/* 9. WORKS / PROCESS (DEPLOYMENT METHODOLOGY & SHOWCASE) */}
         <section 
           id="works" 
-          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-28 sm:pt-36 lg:pt-44 pb-20 sm:pb-28 border-b border-black/10 select-none"
+          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-20 sm:pt-28 lg:pt-32 pb-16 sm:pb-24 lg:pb-28 border-b border-black/10 select-none"
           aria-label="Deployment Methodology — Behind the Architecture"
         >
           <div id="process" className="scroll-mt-28" />
           <div id="work" className="scroll-mt-28" />
+
+          {/* Header matching Reference Image */}
           <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
-            
-            {/* Header matching Reference Image */}
-            <div id="process-header" className="max-w-3xl mx-auto text-center mb-10 sm:mb-14">
+            <div id="process-header" className="max-w-3xl mx-auto text-center mb-4 sm:mb-6">
               <div className="inline-flex items-center gap-2 mb-3">
                 <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-[#16A34A]">BEHIND THE DESIGNS</span>
               </div>
-              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-5 leading-[1.08]">
+              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-4 leading-[1.08]">
                 Curious What Else We've<br className="hidden sm:inline" /> Created?
               </h2>
-              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-8">
+              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-6">
                 Explore more brand identities, packaging, and digital design work in our extended portfolio.
               </p>
 
@@ -2161,93 +2174,22 @@ export default function App() {
                 </a>
               </div>
             </div>
+          </div>
 
-            {/* 3D Rotating Concave Ribbon Stage */}
-            <div 
-              id="process-ribbon-stage"
-              className="relative w-full h-[340px] sm:h-[440px] lg:h-[480px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
-              style={{ perspective: isMobile ? '800px' : '1200px' }}
-              onMouseDown={handleRibbonMouseDown}
-              onMouseMove={handleRibbonMouseMove}
-              onMouseUp={handleRibbonMouseUp}
-              onMouseLeave={() => {
-                isRibbonHovered.current = false;
-                handleRibbonMouseUp();
-              }}
-              onMouseEnter={() => {
-                isRibbonHovered.current = true;
-              }}
-              onTouchStart={handleRibbonTouchStart}
-              onTouchMove={handleRibbonTouchMove}
-              onTouchEnd={handleRibbonTouchEnd}
-            >
-              {/* Left/Right Edge Soft Gradient Masks */}
-              <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-r from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
-              <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-24 bg-gradient-to-l from-[#FAFAF7] to-transparent pointer-events-none z-30"></div>
+          {/* Cinematic Curved Gallery Component - Full Viewport Width Stage */}
+          <div className="w-full my-1 sm:my-2 lg:my-3 overflow-hidden">
+            <CinematicCurvedGallery
+              ref={galleryRef}
+              cards={methodologyCards}
+              onPhaseChange={setActiveMethodologyPhase}
+            />
+          </div>
 
-              {/* 3D Preserved Cylinder Container */}
-              <div 
-                className="relative w-full h-full flex items-center justify-center pointer-events-none"
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                {denseMethodologyCards.map((card, i) => {
-                  const N = denseMethodologyCards.length; // 24
-                  const baseAngle = i * (360 / N); // 15 deg per card
-                  const deg = ((baseAngle + ribbonRotation) % 360 + 360) % 360;
-                  const diff = deg > 180 ? deg - 360 : deg;
-
-                  // Hide back-facing cards outside the front 150-degree arc
-                  if (Math.abs(diff) > 75) return null;
-
-                  const rad = (diff * Math.PI) / 180;
-                  // Radius and depth scale with viewport
-                  const radiusX = isMobile ? 320 : 780;
-                  const depthZ = isMobile ? 120 : 270;
-                  const x = Math.sin(rad) * radiusX;
-                  const z = (1 - Math.cos(rad)) * depthZ;
-                  const y = -(1 - Math.cos(rad)) * (isMobile ? 12 : 24);
-                  const scale = (isMobile ? 0.70 : 0.72) + (1 - Math.cos(rad)) * (isMobile ? 0.46 : 0.52);
-                  const rotY = -diff * (isMobile ? 0.50 : 0.65);
-                  const rotZ = -diff * 0.035;
-                  const opacity = Math.max(0, Math.min(1, (75 - Math.abs(diff)) / 12));
-                  const zIndex = Math.round((1 - Math.cos(rad)) * 100);
-
-                  return (
-                    <div
-                      key={`${card.id}-${i}`}
-                      className="absolute w-[150px] sm:w-[185px] lg:w-[210px] h-[240px] sm:h-[300px] lg:h-[340px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_15px_35px_rgba(0,0,0,0.16)] bg-black/5 will-change-transform pointer-events-auto transition-shadow duration-300 hover:shadow-[0_25px_50px_rgba(0,0,0,0.25)] flex-shrink-0"
-                      style={{
-                        transform: `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, ${z.toFixed(1)}px) rotateY(${rotY.toFixed(1)}deg) rotateZ(${rotZ.toFixed(1)}deg) scale(${scale.toFixed(2)})`,
-                        zIndex,
-                        opacity: opacity.toFixed(2)
-                      }}
-                      onClick={() => {
-                        // Smoothly rotate clicked card to center
-                        const targetDeg = -(baseAngle % 360);
-                        const current = ribbonRotationRef.current;
-                        const diffAngle = ((((targetDeg - current) % 360) + 540) % 360) - 180;
-                        targetRibbonRotation.current = current + diffAngle;
-                      }}
-                    >
-                      <img 
-                        src={card.image} 
-                        alt={card.title} 
-                        width="210"
-                        height="340"
-                        className="w-full h-full object-cover object-top select-none pointer-events-none block"
-                        loading="eager"
-                        decoding="async"
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* 4 Methodology Pillars matching reference image */}
+          {/* 4 Methodology Pillars matching reference image */}
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
             <div 
               id="process-grid" 
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-10 sm:mt-16 pt-8 border-t border-black/10"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-3 sm:mt-5 pt-6 border-t border-black/10"
             >
               {methodologyPhases.map((phase, idx) => {
                 const isActive = activeMethodologyPhase === idx;
@@ -2275,7 +2217,6 @@ export default function App() {
                 );
               })}
             </div>
-
           </div>
         </section>
 
@@ -2330,8 +2271,11 @@ export default function App() {
                   <img 
                     alt="VERHOST Autonomous Sovereign Cloud Architecture and Neural Node Network" 
                     className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_25px_60px_rgba(25,199,99,0.28)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
-                    src="/cloud-architecture-hub-transparent.png"
-                    loading="eager"
+                    src="/cloud-architecture-hub-transparent.webp"
+                    width="1024"
+                    height="788"
+                    loading="lazy"
+                    decoding="async"
                   />
                   
                   {/* Interactive / Animated Green Point Wires Overlay */}
@@ -2480,19 +2424,32 @@ export default function App() {
             </div>
 
             {/* Transformation Matrix Rows (Card effect on hover, no separation lines) */}
-            <div className="flex flex-col gap-2.5 sm:gap-3.5">
-              {transformations.map((item, index) => (
-                <TransformationRow
-                  key={index}
-                  item={item}
-                  index={index}
-                  isActive={activeSolutionRow === index}
-                  onActivate={() => setActiveSolutionRow(index)}
-                  onDeactivate={() => setActiveSolutionRow((curr) => (curr === index ? null : curr))}
-                  onToggle={() => setActiveSolutionRow((curr) => (curr === index ? null : index))}
-                  prefersReducedMotion={prefersReducedMotion}
-                />
-              ))}
+            <div ref={matrixRef} className="flex flex-col gap-2.5 sm:gap-3.5">
+              {transformations.map((item, index) => {
+                const entranceDelay = `${index * 85}ms`;
+                const entranceStyle = prefersReducedMotion || matrixAnimationComplete
+                  ? undefined
+                  : {
+                      opacity: matrixVisible ? 1 : 0,
+                      transform: matrixVisible ? 'translateY(0px)' : 'translateY(20px)',
+                      transition: `opacity 650ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceDelay}, transform 650ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceDelay}`,
+                      willChange: matrixAnimationComplete ? 'auto' : 'opacity, transform'
+                    };
+
+                return (
+                  <div key={index} style={entranceStyle} className="w-full">
+                    <TransformationRow
+                      item={item}
+                      index={index}
+                      isActive={activeSolutionRow === index}
+                      onActivate={() => setActiveSolutionRow(index)}
+                      onDeactivate={() => setActiveSolutionRow((curr) => (curr === index ? null : curr))}
+                      onToggle={() => setActiveSolutionRow((curr) => (curr === index ? null : index))}
+                      prefersReducedMotion={prefersReducedMotion}
+                    />
+                  </div>
+                );
+              })}
             </div>
 
           </div>
@@ -2542,12 +2499,27 @@ export default function App() {
               {/* Expanding Horizontal Accordion Carousel matching reference design */}
               <div id="about-image-wrap" className="lg:col-span-6 w-full">
                 <div 
+                  ref={showcaseRef}
+                  style={prefersReducedMotion || showcaseAnimationComplete ? undefined : {
+                    opacity: showcaseVisible ? 1 : 0,
+                    transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1)'
+                  }}
                   className="w-full h-[400px] sm:h-[460px] lg:h-[490px] p-2.5 sm:p-3.5 bg-[#0C0C0D] rounded-2xl sm:rounded-3xl border border-black/10 shadow-2xl flex gap-2 sm:gap-3 overflow-hidden select-none"
                   role="region"
                   aria-label="About Verhost Brand Pillars Carousel"
                 >
                   {aboutPillars.map((pillar, idx) => {
                     const isActive = activeAboutPillar === idx;
+                    const entranceDelay = `${idx * 90}ms`;
+                    const panelStyle = prefersReducedMotion || showcaseAnimationComplete
+                      ? { background: pillar.gradient }
+                      : {
+                          background: pillar.gradient,
+                          opacity: showcaseVisible ? (isActive ? 1 : 0.85) : 0,
+                          transform: showcaseVisible ? 'translateY(0px)' : 'translateY(20px)',
+                          transition: `flex 500ms cubic-bezier(0.25, 1, 0.5, 1), opacity 650ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceDelay}, transform 650ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceDelay}`,
+                          willChange: showcaseAnimationComplete ? 'auto' : 'opacity, transform'
+                        };
                     return (
                       <div
                         key={pillar.id}
@@ -2561,7 +2533,7 @@ export default function App() {
                         }}
                         onMouseEnter={() => setActiveAboutPillar(idx)}
                         onClick={() => setActiveAboutPillar(idx)}
-                        style={{ background: pillar.gradient }}
+                        style={panelStyle}
                         className={`group relative rounded-xl sm:rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] flex flex-col justify-between ${
                           isActive 
                             ? `flex-[4.2] sm:flex-[4.8] min-w-[210px] ${pillar.ringClass || 'shadow-2xl ring-1 ring-white/15'}` 
@@ -2737,8 +2709,10 @@ export default function App() {
           >
             <img 
               alt="VERHOST Monogram Logo Watermark" 
-              src="/verhost-logo-white.png" 
+              src="/verhost-logo-white.webp" 
               className="w-[850px] sm:w-[1100px] h-auto object-contain opacity-5 filter brightness-100"
+              loading="lazy"
+              decoding="async"
             />
           </div>
 
@@ -2946,7 +2920,11 @@ export default function App() {
                 <img 
                   alt="VERHOST Official Logo" 
                   className="h-10 sm:h-12 w-auto object-contain brightness-100" 
-                  src="/verhost-logo-white.png"
+                  src="/verhost-logo-white.webp"
+                  width="64"
+                  height="48"
+                  loading="lazy"
+                  decoding="async"
                 />
                 <span className="font-display font-bold text-2xl tracking-tight text-white uppercase">
                   VERHOST
