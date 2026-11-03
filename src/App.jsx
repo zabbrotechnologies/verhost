@@ -174,11 +174,11 @@ function WhyPrincipleRow({ pr, idx, isActive, onActivate }) {
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
       onClick={() => onActivate(idx)}
-      className="why-row group relative overflow-hidden w-full py-12 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-12 cursor-pointer select-none transition-colors bg-white hover:bg-[#FAFAF7]/40"
+      className="why-row group relative overflow-hidden w-full py-6 sm:py-8 lg:py-16 px-4 sm:px-8 lg:px-12 cursor-pointer select-none transition-colors bg-white hover:bg-[#FAFAF7]/40"
       style={{ position: 'relative' }}
     >
-      {/* ─── 1. BASE LAYER (Normal View: Clean rectangle, no image, editorial typography) ─── */}
-      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+      {/* ─── 1. BASE LAYER (Normal View: Clean rectangle, editorial typography) ─── */}
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-2 sm:gap-3 lg:gap-6 items-start lg:items-center">
         {/* Principle Number */}
         <div className="lg:col-span-1 font-mono text-xs sm:text-sm font-bold text-[#16A34A] tracking-wider">
           {pr.num}
@@ -186,31 +186,31 @@ function WhyPrincipleRow({ pr, idx, isActive, onActivate }) {
 
         {/* Large Principle Heading */}
         <div className="lg:col-span-5">
-          <h3 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl uppercase tracking-tight text-[#050505] transition-colors duration-300">
+          <h3 className="font-display font-bold text-xl sm:text-2xl lg:text-4xl uppercase tracking-tight text-[#050505] transition-colors duration-300">
             {pr.title}
           </h3>
         </div>
 
         {/* Description Column */}
         <div className="lg:col-span-6">
-          <p className="text-base sm:text-lg text-black/70 leading-relaxed font-normal transition-colors duration-300">
+          <p className="text-sm sm:text-base lg:text-lg text-black/70 leading-relaxed font-normal transition-colors duration-300">
             {pr.desc}
           </p>
         </div>
       </div>
 
-      {/* ─── 2. WATERDROP RIPPLE SPLASH WAVE (Tactile droplet impact at cursor point) ─── */}
+      {/* ─── 2. WATERDROP RIPPLE SPLASH WAVE (Desktop hover only) ─── */}
       <span
         ref={rippleRingRef}
-        className="absolute pointer-events-none rounded-full border border-[#16A34A]/80 shadow-[0_0_24px_rgba(22,163,74,0.5)] z-30 -translate-x-1/2 -translate-y-1/2"
+        className="hidden lg:block absolute pointer-events-none rounded-full border border-[#16A34A]/80 shadow-[0_0_24px_rgba(22,163,74,0.5)] z-30 -translate-x-1/2 -translate-y-1/2"
         style={{ opacity: 0, width: 0, height: 0 }}
         aria-hidden="true"
       />
 
-      {/* ─── 3. HOVER REVEAL LAYER (Waterdrop clip-path: Image + Parallax + Overlay + Active Typography) ─── */}
+      {/* ─── 3. HOVER REVEAL LAYER (Desktop hover only: Waterdrop clip-path: Image + Parallax + Overlay) ─── */}
       <div
         ref={revealLayerRef}
-        className="absolute inset-0 pointer-events-none select-none overflow-hidden z-20 py-12 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-12 flex items-center"
+        className="hidden lg:flex absolute inset-0 pointer-events-none select-none overflow-hidden z-20 py-12 sm:py-14 lg:py-16 px-6 sm:px-10 lg:px-12 items-center"
         style={{
           opacity: 0,
           clipPath: 'circle(0px at 0px 0px)',
@@ -327,11 +327,15 @@ function AnimatedChevronArrow({ isActive, prefersReducedMotion, compact = false 
 // ─── PROBLEM -> SOLUTION TRANSFORMATION ROW ──────────────────────────────────
 function TransformationRow({ item, index, isActive, onActivate, onDeactivate, onToggle, prefersReducedMotion }) {
   const handleMouseEnter = () => {
-    onActivate();
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      onActivate();
+    }
   };
 
   const handleMouseLeave = () => {
-    onDeactivate();
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      onDeactivate();
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -363,15 +367,15 @@ function TransformationRow({ item, index, isActive, onActivate, onDeactivate, on
       role="button"
       aria-expanded={isActive}
       aria-label={`${item.problem} to ${item.solution}. ${item.impact}`}
-      className={`transformation-row group relative w-full cursor-pointer select-none rounded-2xl transition-all duration-400 ease-out focus:outline-none focus-visible:ring-1 focus-visible:ring-[#16A34A] ${
+      className={`transformation-row group relative w-full cursor-pointer select-none transition-all duration-300 ease-out focus:outline-none focus-visible:ring-1 focus-visible:ring-[#16A34A] border-b border-black/[0.08] last:border-b-0 lg:border-b-0 lg:border lg:rounded-2xl ${
         isActive
-          ? 'bg-[#F9FAF8] border border-black/[0.08] shadow-[0_12px_36px_-12px_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(0,0,0,0.03)] -translate-y-0.5'
-          : 'bg-transparent border border-transparent shadow-none hover:bg-[#F9FAF8]/60 hover:border-black/[0.04]'
+          ? 'bg-[#F9FAF8] lg:border-black/[0.08] lg:shadow-[0_12px_36px_-12px_rgba(0,0,0,0.06),0_2px_8px_-2px_rgba(0,0,0,0.03)] lg:-translate-y-0.5'
+          : 'bg-transparent border-transparent hover:bg-[#F9FAF8]/60 lg:border-transparent lg:shadow-none lg:hover:border-black/[0.04]'
       }`}
     >
-      {/* ─── CARD COLLIDING UI SHEEN (appears only when hovered, matching arrow pulse) ─── */}
+      {/* ─── CARD COLLIDING UI SHEEN (appears only when hovered on desktop) ─── */}
       <div
-        className="absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0"
+        className="hidden lg:block absolute inset-0 rounded-2xl overflow-hidden pointer-events-none z-0"
         style={{
           opacity: isActive ? 1 : 0,
           transition: 'opacity 400ms ease'
@@ -387,7 +391,7 @@ function TransformationRow({ item, index, isActive, onActivate, onDeactivate, on
         />
       </div>
 
-      {/* ─── LEFT COLLISION ACCENT INDICATOR (snaps in on hover) ─── */}
+      {/* ─── LEFT COLLISION ACCENT INDICATOR (snaps in on hover, desktop only) ─── */}
       <div
         className="hidden lg:block absolute left-3 top-1/2 -translate-y-1/2 w-1.5 h-7 rounded-full bg-[#16A34A] transition-all duration-400 pointer-events-none z-10"
         style={{
@@ -454,42 +458,70 @@ function TransformationRow({ item, index, isActive, onActivate, onDeactivate, on
         </div>
       </div>
 
-      {/* ─── MOBILE & TABLET VIEW (< 1024px) ─── */}
-      <div className="lg:hidden block w-full py-5 px-3 sm:px-4 z-10">
-        {/* Centered problem -> chevrons -> solution group (Numbers removed) */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3 text-center whitespace-nowrap overflow-x-auto no-scrollbar">
-          <span className="font-display font-bold text-[10.5px] min-[420px]:text-xs sm:text-base md:text-lg uppercase tracking-tight text-[#050505]">
-            {item.problem}
-          </span>
-          <AnimatedChevronArrow isActive={isActive} prefersReducedMotion={prefersReducedMotion} compact={true} />
-          <span
-            className={`font-display font-bold text-[10.5px] min-[420px]:text-xs sm:text-base md:text-lg uppercase tracking-tight transition-all duration-300 ${
-              isActive ? 'text-[#16A34A] opacity-100' : 'text-black/50 opacity-60'
-            }`}
-            style={isActive && !prefersReducedMotion ? {
-              animation: 'solutionCollisionPulse 1.6s ease-in-out infinite',
-              animationDelay: '320ms'
-            } : undefined}
+      {/* ─── MOBILE VIEW (< 1024px): Compact Editorial Transformation Item ─── */}
+      <div className="lg:hidden block w-full py-3.5 sm:py-4 px-2 sm:px-3 z-10">
+        {/* Header Row: Sequence Number, Problem -> Chevrons -> Solution, Disclosure Toggle */}
+        <div className="flex items-start justify-between gap-2.5 sm:gap-3 w-full">
+          <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
+            {/* Small sequence number */}
+            <span className="font-mono text-[11px] sm:text-xs font-bold text-[#16A34A] tracking-wider shrink-0 mt-0.5">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+
+            {/* Problem -> Chevron -> Solution with controlled natural wrapping */}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
+              <span className="font-display font-bold text-[13px] sm:text-[15px] uppercase tracking-tight text-[#050505] leading-snug">
+                {item.problem}
+              </span>
+              <AnimatedChevronArrow isActive={isActive} prefersReducedMotion={prefersReducedMotion} compact={true} />
+              <span
+                className={`font-display font-bold text-[13px] sm:text-[15px] uppercase tracking-tight transition-colors duration-300 leading-snug ${
+                  isActive ? 'text-[#16A34A] opacity-100' : 'text-black/50 opacity-60'
+                }`}
+                style={isActive && !prefersReducedMotion ? {
+                  animation: 'solutionCollisionPulse 1.6s ease-in-out infinite',
+                  animationDelay: '320ms'
+                } : undefined}
+              >
+                {item.solution}
+              </span>
+            </div>
+          </div>
+
+          {/* Subtle disclosure indicator */}
+          <div 
+            className="shrink-0 p-1 text-black/40 transition-transform duration-300"
+            style={{ transform: isActive ? 'rotate(45deg)' : 'none' }}
+            aria-hidden="true"
           >
-            {item.solution}
-          </span>
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M12 5v14m7-7H5" />
+            </svg>
+          </div>
         </div>
 
-        {/* Vertical accordion reveal for description */}
+        {/* Smooth vertical accordion reveal for description */}
         <div
           style={{
             display: 'grid',
             gridTemplateRows: isActive ? '1fr' : '0fr',
             opacity: isActive ? 1 : 0,
-            marginTop: isActive ? '0.85rem' : '0rem',
-            transition: prefersReducedMotion ? 'none' : 'grid-template-rows 480ms cubic-bezier(0.16, 1, 0.3, 1), opacity 480ms ease, margin-top 480ms ease'
+            transition: prefersReducedMotion ? 'none' : 'grid-template-rows 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 360ms ease'
           }}
           aria-hidden={!isActive}
         >
-          <div className="overflow-hidden flex flex-col items-center text-center px-2">
-            <p className="text-xs sm:text-sm text-black/75 leading-relaxed font-sans max-w-md">
-              {item.impact}
-            </p>
+          <div className="overflow-hidden">
+            <div className="pt-2.5 pb-1 pl-6 sm:pl-7 pr-2">
+              <p className="text-xs sm:text-[13px] text-black/75 leading-relaxed font-sans">
+                {item.impact}
+              </p>
+              {item.metric && (
+                <div className="mt-2 inline-flex items-center gap-1.5 font-mono text-[10.5px] sm:text-[11px] font-semibold text-[#16A34A] tracking-wide">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+                  <span>{item.metric}</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -2408,23 +2440,23 @@ export default function App() {
         </section>
 
         {/* 6. BUSINESS PROBLEM -> SOLUTION TRANSFORMATION */}
-        <section id="solutions" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 pt-20 sm:pt-28 pb-8 sm:pb-12">
+        <section id="solutions" className="w-full bg-[#FFFFFF] px-5 sm:px-8 lg:px-16 pt-16 sm:pt-24 lg:pt-28 pb-8 sm:pb-12">
           <div className="max-w-[1360px] mx-auto">
             
-            <div id="solutions-header" className="max-w-4xl mb-14 sm:mb-16">
-              <div className="flex items-center gap-2 mb-3">
+            <div id="solutions-header" className="max-w-4xl mb-8 sm:mb-12 lg:mb-16">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">PROBLEM RESOLUTION MATRIX</span>
               </div>
-              <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-4">
+              <h2 className="font-display font-bold text-2xl sm:text-4xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-3 sm:mb-4">
                 WE DON'T JUST BUILD TECHNOLOGY.<br />WE SOLVE PROBLEMS.
               </h2>
-              <p className="text-base sm:text-lg text-black/60 max-w-2xl">
+              <p className="text-sm sm:text-base lg:text-lg text-black/60 max-w-2xl leading-relaxed">
                 Every friction point in modern enterprise operations maps to an engineered technological breakthrough by VERHOST.
               </p>
             </div>
 
-            {/* Transformation Matrix Rows (Card effect on hover, no separation lines) */}
-            <div ref={matrixRef} className="flex flex-col gap-2.5 sm:gap-3.5">
+            {/* Transformation Matrix Rows (Clean editorial dividers on mobile, card effect on desktop) */}
+            <div ref={matrixRef} className="flex flex-col border-t border-black/[0.08] lg:border-t-0 lg:gap-2.5 xl:gap-3.5">
               {transformations.map((item, index) => {
                 const entranceDelay = `${index * 85}ms`;
                 const entranceStyle = prefersReducedMotion || matrixAnimationComplete
@@ -2456,60 +2488,60 @@ export default function App() {
         </section>
 
         {/* 10. ABOUT VERHOST (STRONG COMPANY STORY + ARCHITECTURAL IMAGERY) */}
-        <section id="about" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 pt-8 sm:pt-12 pb-28 sm:pb-36 border-b border-black/10">
+        <section id="about" className="w-full bg-[#FFFFFF] px-5 sm:px-8 lg:px-16 pt-8 sm:pt-12 pb-16 sm:pb-24 lg:pb-36 border-b border-black/10">
           <div className="max-w-[1360px] mx-auto">
             
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 lg:gap-20 items-center">
               
               {/* Story Copy */}
               <div id="about-copy" className="lg:col-span-6">
-                <div className="flex items-center gap-2 mb-3">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
                   <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">ABOUT VERHOST</span>
                 </div>
 
-                <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-8">
+                <h2 className="font-display font-bold text-2xl sm:text-4xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-4 sm:mb-6 lg:mb-8 leading-[1.08]">
                   WE BUILD WHAT COMES NEXT.
                 </h2>
 
-                <p className="text-lg sm:text-xl text-black/80 font-normal leading-relaxed mb-6 font-sans">
+                <p className="text-base sm:text-lg lg:text-xl text-black/80 font-normal leading-relaxed mb-4 sm:mb-6 font-sans">
                   VERHOST is a sovereign technology and creative solutions company focused on helping modern businesses build stronger digital operations through web, AI, data, and intelligent systems.
                 </p>
 
-                <p className="text-sm sm:text-base text-black/60 leading-relaxed mb-8">
+                <p className="text-xs sm:text-sm lg:text-base text-black/60 leading-relaxed mb-6 sm:mb-8">
                   Founded on the premise that cutting-edge software engineering and disciplined visual art direction must operate as one, VERHOST delivers scalable digital leverage to forward-looking organizations globally.
                 </p>
 
                 {/* Company Metrics Row */}
-                <div id="about-metrics" className="grid grid-cols-3 gap-6 pt-6 border-t border-black/10 font-mono">
+                <div id="about-metrics" className="grid grid-cols-3 gap-2 sm:gap-6 pt-4 sm:pt-6 border-t border-black/10 font-mono">
                   <div className="about-metric">
-                    <div className="font-bold text-2xl sm:text-3xl text-[#16A34A]">99.9%</div>
-                    <div className="text-[11px] text-black/50 uppercase mt-1">Platform Uptime</div>
+                    <div className="font-bold text-xl sm:text-3xl text-[#16A34A]">99.9%</div>
+                    <div className="text-[10px] sm:text-[11px] text-black/50 uppercase mt-1 leading-tight">Platform Uptime</div>
                   </div>
                   <div className="about-metric">
-                    <div className="font-bold text-2xl sm:text-3xl text-[#16A34A]">4.8x</div>
-                    <div className="text-[11px] text-black/50 uppercase mt-1">Average ROI</div>
+                    <div className="font-bold text-xl sm:text-3xl text-[#16A34A]">4.8x</div>
+                    <div className="text-[10px] sm:text-[11px] text-black/50 uppercase mt-1 leading-tight">Average ROI</div>
                   </div>
                   <div className="about-metric">
-                    <div className="font-bold text-2xl sm:text-3xl text-[#16A34A]">24/7</div>
-                    <div className="text-[11px] text-black/50 uppercase mt-1">Autonomous Ops</div>
+                    <div className="font-bold text-xl sm:text-3xl text-[#16A34A]">24/7</div>
+                    <div className="text-[10px] sm:text-[11px] text-black/50 uppercase mt-1 leading-tight">Autonomous Ops</div>
                   </div>
                 </div>
               </div>
 
-              {/* Expanding Horizontal Accordion Carousel matching reference design */}
-              <div id="about-image-wrap" className="lg:col-span-6 w-full">
+              {/* Expanding Brand Pillars: Desktop (Horizontal Accordion) vs Mobile (Vertical Accordion) */}
+              <div id="about-image-wrap" ref={showcaseRef} className="lg:col-span-6 w-full">
+                {/* ─── DESKTOP VIEW (≥ 1024px): Horizontal Accordion matching reference design ─── */}
                 <div 
-                  ref={showcaseRef}
                   style={prefersReducedMotion || showcaseAnimationComplete ? undefined : {
                     opacity: showcaseVisible ? 1 : 0,
                     transition: 'opacity 500ms cubic-bezier(0.16, 1, 0.3, 1)'
                   }}
-                  className="w-full h-[400px] sm:h-[460px] lg:h-[490px] p-2.5 sm:p-3.5 bg-[#0C0C0D] rounded-2xl sm:rounded-3xl border border-black/10 shadow-2xl flex gap-2 sm:gap-3 overflow-hidden select-none"
+                  className="hidden lg:flex w-full h-[400px] sm:h-[460px] lg:h-[490px] p-2.5 sm:p-3.5 bg-[#0C0C0D] rounded-2xl sm:rounded-3xl border border-black/10 shadow-2xl gap-2 sm:gap-3 overflow-hidden select-none"
                   role="region"
                   aria-label="About Verhost Brand Pillars Carousel"
                 >
                   {aboutPillars.map((pillar, idx) => {
-                    const isActive = activeAboutPillar === idx;
+                    const isActive = (activeAboutPillar ?? 0) === idx;
                     const entranceDelay = `${idx * 90}ms`;
                     const panelStyle = prefersReducedMotion || showcaseAnimationComplete
                       ? { background: pillar.gradient }
@@ -2611,6 +2643,129 @@ export default function App() {
                     );
                   })}
                 </div>
+
+                {/* ─── MOBILE VIEW (< 1024px): Dedicated Vertical Expandable Accordion ─── */}
+                <div 
+                  className="lg:hidden flex flex-col gap-2.5 w-full p-2.5 sm:p-3 bg-[#0C0C0D] rounded-2xl border border-black/10 shadow-xl select-none"
+                  role="region"
+                  aria-label="About Verhost Brand Pillars Mobile Accordion"
+                >
+                  {aboutPillars.map((pillar, idx) => {
+                    const isActive = activeAboutPillar === idx;
+                    const entranceDelay = `${idx * 80}ms`;
+                    const mobileEntranceStyle = prefersReducedMotion || showcaseAnimationComplete
+                      ? undefined
+                      : {
+                          opacity: showcaseVisible ? 1 : 0,
+                          transform: showcaseVisible ? 'translateY(0px)' : 'translateY(16px)',
+                          transition: `opacity 550ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceDelay}, transform 550ms cubic-bezier(0.16, 1, 0.3, 1) ${entranceDelay}`
+                        };
+
+                    return (
+                      <div
+                        key={pillar.id}
+                        style={mobileEntranceStyle}
+                        className="w-full"
+                      >
+                        <div
+                          role="tab"
+                          aria-selected={isActive}
+                          tabIndex={0}
+                          onClick={() => setActiveAboutPillar((curr) => (curr === idx ? null : idx))}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setActiveAboutPillar((curr) => (curr === idx ? null : idx));
+                            }
+                          }}
+                          style={{ background: pillar.gradient }}
+                          className={`relative rounded-xl overflow-hidden cursor-pointer transition-all duration-300 ${
+                            isActive ? (pillar.ringClass || 'ring-1 ring-white/20 shadow-lg') : 'hover:brightness-105'
+                          }`}
+                        >
+                          {/* Faded Watermark when active */}
+                          {isActive && (
+                            <div 
+                              className={`absolute -top-1 right-2 ${pillar.watermarkClass || 'text-white/[0.06]'} font-display font-black text-7xl sm:text-8xl select-none pointer-events-none leading-none overflow-hidden`}
+                              aria-hidden="true"
+                            >
+                              {pillar.num}
+                            </div>
+                          )}
+
+                          {/* Collapsed Header / Top Row */}
+                          <div className="relative z-10 p-3 sm:p-3.5 flex items-center justify-between gap-3 w-full">
+                            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                              {/* Icon Badge */}
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 transition-transform ${pillar.iconClass || 'bg-white/15 text-white'}`}>
+                                {pillar.icon}
+                              </div>
+
+                              {/* Sequence Number */}
+                              <span className="font-mono text-xs font-bold tracking-wider shrink-0" style={{ color: pillar.textColor, opacity: 0.75 }}>
+                                {pillar.num}
+                              </span>
+
+                              {/* Title in readable Horizontal Typography */}
+                              <span 
+                                style={{ color: pillar.textColor }}
+                                className="font-display font-bold text-sm sm:text-base tracking-tight uppercase"
+                              >
+                                {pillar.title}
+                              </span>
+                            </div>
+
+                            {/* Right: Chevron toggle */}
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span 
+                                className="text-sm font-mono transition-transform duration-300"
+                                style={{
+                                  color: pillar.textColor,
+                                  transform: isActive ? 'rotate(180deg)' : 'none'
+                                }}
+                                aria-hidden="true"
+                              >
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Expanded Content Drawer */}
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateRows: isActive ? '1fr' : '0fr',
+                              opacity: isActive ? 1 : 0,
+                              transition: prefersReducedMotion ? 'none' : 'grid-template-rows 360ms cubic-bezier(0.16, 1, 0.3, 1), opacity 360ms ease'
+                            }}
+                            aria-hidden={!isActive}
+                          >
+                            <div className="overflow-hidden">
+                              <div className="relative z-10 px-3.5 pb-4 pt-1 sm:px-4 sm:pb-4.5">
+                                {pillar.tag && (
+                                  <div className="mb-2">
+                                    <span className={`inline-block font-mono text-[10px] font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full border ${pillar.badgeClass || 'text-white/70 bg-black/25 border-white/10'}`}>
+                                      {pillar.tag}
+                                    </span>
+                                  </div>
+                                )}
+                                <p 
+                                  style={{ color: pillar.descColor }}
+                                  className="text-xs sm:text-[13.5px] leading-relaxed font-sans max-w-md"
+                                >
+                                  {pillar.desc}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
             </div>
@@ -2619,17 +2774,17 @@ export default function App() {
         </section>
 
         {/* 8. WHY VERHOST (BUILT DIFFERENTLY + HOVER VISUAL PREVIEW) */}
-        <section id="why" className="w-full bg-[#FFFFFF] px-6 sm:px-10 lg:px-16 py-32 sm:py-40 border-b border-black/10">
+        <section id="why" className="w-full bg-[#FFFFFF] px-5 sm:px-8 lg:px-16 py-16 sm:py-24 lg:py-36 border-b border-black/10">
           <div className="max-w-[1360px] mx-auto">
             
-            <div id="why-header" className="max-w-3xl mb-20">
-              <div className="flex items-center gap-2 mb-3">
+            <div id="why-header" className="max-w-3xl mb-8 sm:mb-12 lg:mb-16">
+              <div className="flex items-center gap-2 mb-2 sm:mb-3">
                 <span className="text-xs font-mono font-bold uppercase tracking-widest text-[#16A34A]">WHY VERHOST</span>
               </div>
-              <h2 className="font-display font-bold text-3xl sm:text-5xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-4">
+              <h2 className="font-display font-bold text-2xl sm:text-4xl lg:text-6xl tracking-tight uppercase text-[#050505] mb-3 sm:mb-4">
                 BUILT DIFFERENTLY.
               </h2>
-              <p className="text-base sm:text-lg text-black/60">
+              <p className="text-sm sm:text-base lg:text-lg text-black/60 leading-relaxed">
                 Four fundamental operating principles that ensure technical rigor and commercial victory.
               </p>
             </div>
