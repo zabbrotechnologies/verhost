@@ -1236,21 +1236,29 @@ export default function App() {
   ];
 
   useEffect(() => {
-    // Lenis Smooth Scroll
-    const lenis = new Lenis({
-      duration: 1.2,
-      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      orientation: 'vertical',
-      smoothWheel: true,
-    });
-    lenisRef.current = lenis;
+    // Lenis Smooth Scroll (Desktop with fine pointer only, preserving native hardware-accelerated 60/120Hz touch scrolling on mobile)
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && !window.matchMedia('(pointer: coarse)').matches;
+    let lenis = null;
+    let tickerCallback = null;
 
-    lenis.on('scroll', ScrollTrigger.update);
-    const tickerCallback = (time) => {
-      lenis.raf(time * 1000);
-    };
-    gsap.ticker.add(tickerCallback);
-    gsap.ticker.lagSmoothing(0);
+    if (isDesktop) {
+      lenis = new Lenis({
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        smoothWheel: true,
+      });
+      lenisRef.current = lenis;
+
+      lenis.on('scroll', ScrollTrigger.update);
+      tickerCallback = (time) => {
+        lenis.raf(time * 1000);
+      };
+      gsap.ticker.add(tickerCallback);
+    } else {
+      window.addEventListener('scroll', ScrollTrigger.update, { passive: true });
+    }
+    gsap.ticker.lagSmoothing(500, 33);
 
     // Scroll state for Navbar
     const handleScroll = () => {
@@ -1268,7 +1276,7 @@ export default function App() {
         .from('#hero-cta-group', { opacity: 0, y: 20, duration: 0.8 }, '-=0.4');
 
       // ─── HERO: Parallax background on scroll ────────────────────────────────
-      if (heroBgRef.current) {
+      if (heroBgRef.current && isDesktop) {
         gsap.fromTo(heroBgRef.current,
           { y: -50, scale: 1.12 },
           { y: 120, scale: 1.0, ease: 'none',
@@ -1328,12 +1336,14 @@ export default function App() {
         opacity: 0, y: 50, duration: 1, ease: 'power3.out',
         scrollTrigger: { trigger: '#solutions', start: 'top 80%', toggleActions: 'play none none none' }
       });
-      document.querySelectorAll('.transformation-row').forEach((row, i) => {
-        gsap.from(row, {
-          opacity: 0, x: -40, duration: 0.8, delay: i * 0.06, ease: 'power2.out',
-          scrollTrigger: { trigger: row, start: 'top 88%', toggleActions: 'play none none none' }
+      if (isDesktop) {
+        document.querySelectorAll('.transformation-row').forEach((row, i) => {
+          gsap.from(row, {
+            opacity: 0, x: -40, duration: 0.8, delay: i * 0.06, ease: 'power2.out',
+            scrollTrigger: { trigger: row, start: 'top 88%', toggleActions: 'play none none none' }
+          });
         });
-      });
+      }
 
       // ─── CAPABILITIES SECTION: Header reveal ────────────────────────────────
       if (document.querySelector('#capabilities-header')) {
@@ -1443,9 +1453,12 @@ export default function App() {
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
+      if (!isDesktop) {
+        window.removeEventListener('scroll', ScrollTrigger.update);
+      }
       lenisRef.current = null;
-      lenis.destroy();
-      gsap.ticker.remove(tickerCallback);
+      if (lenis) lenis.destroy();
+      if (tickerCallback) gsap.ticker.remove(tickerCallback);
       ctx.revert();
       ScrollTrigger.getAll().forEach(t => t.kill());
     };
@@ -1597,8 +1610,8 @@ export default function App() {
               {/* Layered US Agency Luxury Obsidian & Emerald Vignettes */}
               <div className="absolute inset-0 bg-gradient-to-b from-[#050806]/90 via-[#050806]/55 to-[#050806]/98"></div>
               <div className="absolute inset-0 bg-[radial-gradient(#19C763_1px,transparent_1px)] [background-size:48px_48px] opacity-15"></div>
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[600px] bg-[#16A34A]/12 rounded-full blur-[170px]"></div>
-              <div className="absolute bottom-10 right-10 w-[550px] h-[450px] bg-[#19C763]/10 rounded-full blur-[150px]"></div>
+              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[600px] lg:w-[850px] h-[260px] sm:h-[450px] lg:h-[600px] bg-[#16A34A]/12 rounded-full blur-[60px] sm:blur-[110px] lg:blur-[170px]"></div>
+              <div className="absolute bottom-10 right-10 w-[260px] sm:w-[400px] lg:w-[550px] h-[220px] sm:h-[350px] lg:h-[450px] bg-[#19C763]/10 rounded-full blur-[50px] sm:blur-[100px] lg:blur-[150px]"></div>
             </div>
           </div>
 
@@ -2172,7 +2185,7 @@ export default function App() {
         {/* 9. WORKS / PROCESS (DEPLOYMENT METHODOLOGY & SHOWCASE) */}
         <section 
           id="works" 
-          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-20 sm:pt-28 lg:pt-32 pb-16 sm:pb-24 lg:pb-28 border-b border-black/10 select-none"
+          className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-28 pt-14 sm:pt-20 lg:pt-24 pb-14 sm:pb-20 lg:pb-24 border-b border-black/10 select-none"
           aria-label="Deployment Methodology — Behind the Architecture"
         >
           <div id="process" className="scroll-mt-28" />
@@ -2180,14 +2193,14 @@ export default function App() {
 
           {/* Header matching Reference Image */}
           <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
-            <div id="process-header" className="max-w-3xl mx-auto text-center mb-4 sm:mb-6">
-              <div className="inline-flex items-center gap-2 mb-3">
+            <div id="process-header" className="max-w-3xl mx-auto text-center mb-2 sm:mb-3">
+              <div className="inline-flex items-center gap-2 mb-2 sm:mb-3">
                 <span className="text-xs font-mono font-bold uppercase tracking-[0.25em] text-[#16A34A]">BEHIND THE DESIGNS</span>
               </div>
-              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-4 leading-[1.08]">
+              <h2 className="font-display font-medium text-4xl sm:text-6xl lg:text-7xl tracking-tight text-[#050505] mb-3 sm:mb-4 leading-[1.08]">
                 Curious What Else We've<br className="hidden sm:inline" /> Created?
               </h2>
-              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-6">
+              <p className="text-base sm:text-lg text-black/60 font-sans max-w-2xl mx-auto leading-relaxed mb-4 sm:mb-5">
                 Explore more brand identities, packaging, and digital design work in our extended portfolio.
               </p>
 
@@ -2209,7 +2222,7 @@ export default function App() {
           </div>
 
           {/* Cinematic Curved Gallery Component - Full Viewport Width Stage */}
-          <div className="w-full my-1 sm:my-2 lg:my-3 overflow-hidden">
+          <div className="w-full -mt-4 sm:-mt-6 lg:-mt-8 -mb-2 sm:-mb-3 lg:-mb-4 overflow-hidden">
             <CinematicCurvedGallery
               ref={galleryRef}
               cards={methodologyCards}
@@ -2221,7 +2234,7 @@ export default function App() {
           <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
             <div 
               id="process-grid" 
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-3 sm:mt-5 pt-6 border-t border-black/10"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-2.5 sm:mt-2 pt-4 sm:pt-5 border-t border-black/10"
             >
               {methodologyPhases.map((phase, idx) => {
                 const isActive = activeMethodologyPhase === idx;
@@ -2255,7 +2268,7 @@ export default function App() {
         {/* 5. STRONG BLACK TRANSITION STATEMENT (WITH CINEMATIC NEURAL VISUAL IN BLANK SPACE) */}
         <section id="transition-statement" className="w-full bg-[#050505] text-white px-6 sm:px-10 lg:px-16 py-36 sm:py-44 border-y border-white/10 relative overflow-hidden">
           {/* Subtle Ambient Emerald Glow */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[350px] bg-[#16A34A]/10 rounded-full blur-[160px] pointer-events-none"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[500px] lg:w-[700px] h-[180px] sm:h-[260px] lg:h-[350px] bg-[#16A34A]/10 rounded-full blur-[50px] sm:blur-[100px] lg:blur-[160px] pointer-events-none"></div>
 
           <div className="max-w-[1360px] mx-auto relative z-10">
             
@@ -2356,7 +2369,8 @@ export default function App() {
                     <path d="M 668 310 L 778 248" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
                     <path d="M 648 322 L 758 260" stroke="#19C763" strokeWidth="1.8" strokeOpacity="0.65" />
 
-                    {/* Faint Energy Tracer Beams along Wires */}
+                    {/* Faint Energy Tracer Beams along Wires (Desktop only to prevent continuous GPU rasterization load on mobile) */}
+                    <g className="hidden md:inline">
                     <path d="M 440 648 L 236 752" stroke="#52FFA0" strokeWidth="2" strokeDasharray="8 20" filter="url(#hub-glow)">
                       <animate attributeName="stroke-dashoffset" values="0;-56" dur="1.8s" repeatCount="indefinite" />
                     </path>
@@ -2430,6 +2444,7 @@ export default function App() {
                     <circle r="3.5" fill="#52FFA0" filter="url(#hub-glow)">
                       <animateMotion dur="2.5" begin="1.4s" repeatCount="indefinite" path="M 758 260 L 648 322" />
                     </circle>
+                    </g>
                   </svg>
                 </div>
               </div>
@@ -2872,7 +2887,7 @@ export default function App() {
           </div>
 
           {/* Ambient Emerald Pulse */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#16A34A]/15 rounded-full blur-[180px] pointer-events-none"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[500px] lg:w-[700px] h-[240px] sm:h-[380px] lg:h-[500px] bg-[#16A34A]/15 rounded-full blur-[60px] sm:blur-[110px] lg:blur-[180px] pointer-events-none"></div>
 
           <div className="relative z-10 max-w-4xl mx-auto flex flex-col items-center">
             <div id="cta-eyebrow" className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 font-mono text-[11px] text-[#19C763] uppercase tracking-widest">

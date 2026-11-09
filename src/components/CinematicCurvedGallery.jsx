@@ -86,6 +86,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
   const targetProgressRef = useRef(null);
   const isDraggingRef = useRef(false);
   const dragStartXRef = useRef(0);
+  const dragStartYRef = useRef(0);
   const dragStartProgressRef = useRef(0);
   const hasDraggedRef = useRef(false);
   const rafIdRef = useRef(null);
@@ -306,14 +307,14 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     lastTimeRef.current = performance.now();
 
     const loop = (now) => {
-      const rawDt = now - lastTimeRef.current;
-      lastTimeRef.current = now;
-
-      // Offscreen Battery & CPU Optimization: Pause transforms when gallery is scrolled out of view
+      // Offscreen Battery & GPU Optimization: Truly stop transforms when gallery is scrolled out of view
       if (!isIntersectingRef.current) {
-        rafIdRef.current = requestAnimationFrame(loop);
+        rafIdRef.current = null;
         return;
       }
+
+      const rawDt = now - lastTimeRef.current;
+      lastTimeRef.current = now;
 
       const dt = Math.min(50, Math.max(1, rawDt));
 
@@ -344,13 +345,17 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
       rafIdRef.current = requestAnimationFrame(loop);
     };
 
+    loopRef.current = loop;
     rafIdRef.current = requestAnimationFrame(loop);
 
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+      rafIdRef.current = null;
       mediaQuery.removeEventListener('change', handleMotionChange);
     };
   }, [updateCardStyles]);
+
+  const loopRef = useRef(null);
 
   // IntersectionObserver to pause animation work when offscreen (saving mobile battery & GPU)
   useEffect(() => {
@@ -359,9 +364,13 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
       (entries) => {
         for (const entry of entries) {
           isIntersectingRef.current = entry.isIntersecting;
+          if (entry.isIntersecting && !rafIdRef.current && loopRef.current) {
+            lastTimeRef.current = performance.now();
+            rafIdRef.current = requestAnimationFrame(loopRef.current);
+          }
         }
       },
-      { rootMargin: '250px' }
+      { rootMargin: '200px' }
     );
     io.observe(containerRef.current);
     return () => io.disconnect();
@@ -422,6 +431,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     isDraggingRef.current = true;
     hasDraggedRef.current = false;
     dragStartXRef.current = e.clientX;
+    dragStartYRef.current = e.clientY;
     dragStartProgressRef.current = progressRef.current;
     targetProgressRef.current = null;
     try {
@@ -434,6 +444,19 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
   const handlePointerMove = (e) => {
     if (!isDraggingRef.current) return;
     const deltaX = e.clientX - dragStartXRef.current;
+    const deltaY = e.clientY - dragStartYRef.current;
+
+    // Detect predominantly vertical drag on mobile and yield immediately to native page scrolling
+    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 6) {
+      isDraggingRef.current = false;
+      try {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
     if (Math.abs(deltaX) > 4) {
       hasDraggedRef.current = true;
     }
@@ -456,8 +479,8 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     <div
       ref={containerRef}
       id="process-ribbon-stage"
-      className="relative w-full h-[310px] sm:h-[390px] lg:h-[470px] xl:h-[480px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
-      style={{ perspective: '1400px' }}
+      className="relative w-full h-[270px] sm:h-[350px] lg:h-[430px] xl:h-[440px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+      style={{ perspective: '1400px', touchAction: 'pan-y' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -478,7 +501,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
             ref={(el) => {
               cardElementsRef.current[i] = el;
             }}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[165px] sm:w-[215px] lg:w-[270px] h-[270px] sm:h-[350px] lg:h-[440px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_16px_40px_rgba(0,0,0,0.14)] bg-[#101412] will-change-transform pointer-events-auto cursor-pointer transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(0,0,0,0.24)] flex-shrink-0 border border-black/8 ring-1 ring-black/5"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[165px] sm:w-[215px] lg:w-[270px] h-[270px] sm:h-[350px] lg:h-[440px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-md sm:shadow-[0_16px_40px_rgba(0,0,0,0.14)] bg-[#101412] pointer-events-auto cursor-pointer transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(0,0,0,0.24)] flex-shrink-0 border border-black/8 ring-1 ring-black/5"
             style={{
               transformOrigin: '50% 50%',
               backfaceVisibility: 'hidden',
