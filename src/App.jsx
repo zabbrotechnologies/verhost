@@ -3448,14 +3448,14 @@ export default function App() {
         </div>
       </footer>
 
-      {/* ─── EMBEDDED EXTENDED PORTFOLIO SHOWCASE (Background Preloaded, Masked VERHOST URL) ─── */}
+      {/* ─── EMBEDDED EXTENDED WORKS SHOWCASE (Background Preloaded, Masked VERHOST URL) ─── */}
       {showcaseMounted && (
         <div
           id="projects-showcase-portal"
           role="dialog"
           aria-modal={projectsOpen}
           aria-hidden={!projectsOpen}
-          aria-label="VERHOST Extended Works Portfolio"
+          aria-label="VERHOST Extended Digital Works"
           className="fixed inset-0 flex flex-col bg-[#050907] transition-opacity duration-200"
           style={
             projectsOpen
@@ -3504,16 +3504,55 @@ export default function App() {
           {/* Live Preloaded Showcase Viewport */}
           <div className="relative flex-1 w-full bg-[#050907] overflow-hidden">
             {!showcaseLoaded && projectsOpen && (
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#050907] text-white px-6 text-center">
-                <div className="w-8 h-8 rounded-full border-2 border-[#19C763]/30 border-t-[#19C763] animate-spin mb-3" />
-                <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#19C763]">
-                  LOADING VERHOST PORTFOLIO...
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#050907] text-white px-6 text-center overflow-hidden select-none">
+                {/* Ambient Radial Glow & Subtle Dot Grid */}
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-0 bg-[radial-gradient(#19C763_1px,transparent_1px)] [background-size:36px_36px] opacity-[0.07] pointer-events-none"
+                />
+                <div
+                  aria-hidden="true"
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] sm:w-[460px] h-[240px] sm:h-[320px] rounded-full bg-[#16A34A]/15 blur-[80px] pointer-events-none"
+                />
+
+                {/* Orbital Architectural Brand Core */}
+                <div className="relative flex items-center justify-center w-24 h-24 sm:w-28 sm:h-28 mb-7">
+                  {/* Outer Dashed Slow Ring */}
+                  <div className="absolute inset-0 rounded-full border border-dashed border-[#19C763]/35 animate-[spin_10s_linear_infinite]" />
+                  {/* Mid Dual-Arc Precision Spinner */}
+                  <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-[#19C763] border-r-[#19C763]/40 animate-[spin_1.4s_linear_infinite]" />
+                  {/* Inner Counter-Rotating Hairline Ring */}
+                  <div className="absolute inset-4 rounded-full border border-transparent border-b-[#19C763]/70 animate-[spin_2.2s_linear_infinite_reverse]" />
+                  {/* Center Medallion with Brand Mark */}
+                  <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-[#0B120E] border border-[#19C763]/35 shadow-[0_0_28px_rgba(25,199,99,0.28)] flex items-center justify-center">
+                    <img
+                      src="/verhost-logo-white.webp"
+                      alt="VERHOST"
+                      className="w-7 h-7 sm:w-8 sm:h-8 object-contain"
+                    />
+                  </div>
+                </div>
+
+                {/* Editorial Display Heading */}
+                <div className="relative z-10 font-display font-medium text-2xl sm:text-3xl tracking-tight uppercase text-white mb-2">
+                  CURATED DIGITAL WORKS
+                </div>
+
+                {/* Status Copy */}
+                <div className="relative z-10 inline-flex items-center gap-2 font-mono text-[11px] sm:text-xs uppercase tracking-[0.24em] text-[#19C763] mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] animate-pulse" />
+                  <span>LOADING VERHOST SAMPLE WORKS...</span>
+                </div>
+
+                {/* Sleek Shimmer Progress Track */}
+                <div className="relative z-10 w-52 sm:w-64 h-[2px] rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full w-2/5 rounded-full bg-gradient-to-r from-transparent via-[#19C763] to-transparent showcase-loader-sweep" />
                 </div>
               </div>
             )}
             <iframe
               src={EXTENDED_WORKS_URL}
-              title="VERHOST Extended Digital Works Portfolio"
+              title="VERHOST Extended Digital Works"
               onLoad={() => setShowcaseLoaded(true)}
               referrerPolicy="no-referrer"
               allow="fullscreen; autoplay"
