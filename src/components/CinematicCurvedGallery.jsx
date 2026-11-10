@@ -85,9 +85,15 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
   const progressRef = useRef(0);
   const targetProgressRef = useRef(null);
   const isDraggingRef = useRef(false);
+  const dragModeRef = useRef('idle'); // 'idle' | 'pending' | 'dragging' | 'scrolling'
   const dragStartXRef = useRef(0);
   const dragStartYRef = useRef(0);
   const dragStartProgressRef = useRef(0);
+  const lastMoveXRef = useRef(0);
+  const lastMoveTimeRef = useRef(0);
+  const dragVelocityRef = useRef(0);
+  const inertiaVelocityRef = useRef(0);
+  const capturedPointerIdRef = useRef(null);
   const hasDraggedRef = useRef(false);
   const rafIdRef = useRef(null);
   const lastTimeRef = useRef(performance.now());
@@ -103,6 +109,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     maxScale: 1.00,
     targetGap: 20,
     beta: 0.40,
+    scaleExp: 2.2,
     sigma0: 168.5,
     sigmaInf: 290,
     viewHalfWidth: 760,
@@ -137,35 +144,38 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     let maxScale = 1.00;
     let targetGap = 20;
     let beta = 0.40;
+    let scaleExp = 2.2;
     let viewHalfWidth = Math.max(340, width * 0.48);
     let curveZDepth = 200;
     let maxRotateY = 16;
     let perspective = 1400;
 
     if (width < 640) {
-      // Mobile
-      cardWidth = 165;
-      cardHeight = 270;
-      minScale = 0.58;
+      // Mobile: Proportioned so 4-5 cards form a symmetric concave hourglass with clean 10-15px gaps & zero overlap
+      cardWidth = 134;
+      cardHeight = 218;
+      minScale = 0.64;
       maxScale = 1.00;
-      targetGap = 12;
-      beta = 0.40;
-      viewHalfWidth = Math.max(170, width * 0.45);
-      curveZDepth = 90;
-      maxRotateY = 10;
-      perspective = 850;
+      targetGap = 14;
+      beta = 0.65;
+      scaleExp = 1.6;
+      viewHalfWidth = Math.max(200, width * 0.54);
+      curveZDepth = 60;
+      maxRotateY = 7;
+      perspective = 950;
     } else if (width < 1024) {
       // Tablet
-      cardWidth = 215;
-      cardHeight = 350;
-      minScale = 0.56;
+      cardWidth = 195;
+      cardHeight = 318;
+      minScale = 0.58;
       maxScale = 1.00;
       targetGap = 16;
-      beta = 0.40;
-      viewHalfWidth = Math.max(260, width * 0.46);
-      curveZDepth = 140;
-      maxRotateY = 14;
-      perspective = 1100;
+      beta = 0.55;
+      scaleExp = 1.8;
+      viewHalfWidth = Math.max(330, width * 0.50);
+      curveZDepth = 130;
+      maxRotateY = 12;
+      perspective = 1150;
     }
 
     const sigma0 = cardWidth * minScale + targetGap;
@@ -179,6 +189,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
       maxScale,
       targetGap,
       beta,
+      scaleExp,
       sigma0,
       sigmaInf,
       totalCards,
@@ -200,6 +211,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
       minScale,
       maxScale,
       beta,
+      scaleExp,
       sigma0,
       sigmaInf,
       totalCards,
@@ -251,8 +263,8 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
       const p = X / viewHalfWidth;
       const absP = Math.abs(p);
 
-      // Continuous Hourglass Scale: center is smallest (~0.55), expanding to ends (~1.00)
-      const scaleFactor = 1.0 - Math.exp(-2.2 * p * p);
+      // Continuous Hourglass Scale: center is smallest (~0.55 desktop / ~0.64 mobile), expanding to ends (~1.00)
+      const scaleFactor = 1.0 - Math.exp(-scaleExp * p * p);
       const scale = minScale + (maxScale - minScale) * Math.min(1.0, scaleFactor);
 
       // Vertical Trajectory: Symmetrical horizontal centerline through waist (y = 0)
@@ -317,23 +329,32 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
       lastTimeRef.current = now;
 
       const dt = Math.min(50, Math.max(1, rawDt));
+      const dtSec = dt / 1000;
 
       const { totalCards } = layoutRef.current;
       const isReduced = prefersReducedMotionRef.current;
 
       if (targetProgressRef.current !== null) {
-        // Smoothly glide towards target card or phase
+        // Frame-rate independent glide towards target card or phase
         const diff = targetProgressRef.current - progressRef.current;
         if (Math.abs(diff) < 0.002) {
           progressRef.current = targetProgressRef.current;
           targetProgressRef.current = null;
         } else {
-          progressRef.current += diff * 0.085;
+          progressRef.current += diff * (1 - Math.exp(-5.5 * dtSec));
         }
-      } else if (!isDraggingRef.current && !isReduced) {
-        // Continuous smooth auto-advance speed: ~0.20 cards per second (constant and never pauses on hover)
-        const speed = 0.20;
-        progressRef.current += speed * (dt / 1000);
+      } else if (!isDraggingRef.current) {
+        if (Math.abs(inertiaVelocityRef.current) > 0.02) {
+          progressRef.current += inertiaVelocityRef.current * dtSec;
+          inertiaVelocityRef.current *= Math.exp(-4.5 * dtSec);
+        } else {
+          inertiaVelocityRef.current = 0;
+          if (!isReduced) {
+            // Continuous smooth auto-advance speed: ~0.20 cards per second
+            const speed = 0.20;
+            progressRef.current += speed * dtSec;
+          }
+        }
       }
 
       // Keep progress in positive range [0, totalCards)
@@ -379,6 +400,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
   // ResizeObserver for responsive layout updates
   useEffect(() => {
     updateLayoutMeasurements();
+    updateCardStyles(progressRef.current);
     const ro = new ResizeObserver(() => {
       updateLayoutMeasurements();
       updateCardStyles(progressRef.current);
@@ -411,6 +433,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
         }
       }
 
+      inertiaVelocityRef.current = 0;
       targetProgressRef.current = bestTarget;
     }
   }), [cards.length]);
@@ -423,55 +446,94 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     const halfN = N / 2;
     let du = i - progressRef.current;
     du = ((((du + halfN) % N) + N) % N) - halfN;
+    inertiaVelocityRef.current = 0;
     targetProgressRef.current = progressRef.current + du;
   };
 
-  // Pointer drag handling (mouse & touch)
+  // Pointer drag handling (mouse & touch) with axis locking and momentum inertia
   const handlePointerDown = (e) => {
-    isDraggingRef.current = true;
+    dragModeRef.current = 'pending';
+    isDraggingRef.current = false;
     hasDraggedRef.current = false;
     dragStartXRef.current = e.clientX;
     dragStartYRef.current = e.clientY;
+    lastMoveXRef.current = e.clientX;
+    lastMoveTimeRef.current = performance.now();
+    dragVelocityRef.current = 0;
+    inertiaVelocityRef.current = 0;
     dragStartProgressRef.current = progressRef.current;
     targetProgressRef.current = null;
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
+    capturedPointerIdRef.current = null;
   };
 
   const handlePointerMove = (e) => {
-    if (!isDraggingRef.current) return;
+    const mode = dragModeRef.current;
+    if (mode === 'idle' || mode === 'scrolling') return;
+
     const deltaX = e.clientX - dragStartXRef.current;
     const deltaY = e.clientY - dragStartYRef.current;
 
-    // Detect predominantly vertical drag on mobile and yield immediately to native page scrolling
-    if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 6) {
-      isDraggingRef.current = false;
+    if (mode === 'pending') {
+      if (Math.max(Math.abs(deltaX), Math.abs(deltaY)) < 5) return;
+
+      // Vertical scroll intent: release cleanly to native page momentum scroll without moving carousel
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        dragModeRef.current = 'scrolling';
+        isDraggingRef.current = false;
+        return;
+      }
+
+      // Horizontal swipe/drag intent confirmed
+      dragModeRef.current = 'dragging';
+      isDraggingRef.current = true;
+      hasDraggedRef.current = true;
+      dragStartXRef.current = e.clientX;
+      dragStartProgressRef.current = progressRef.current;
+      lastMoveXRef.current = e.clientX;
+      lastMoveTimeRef.current = performance.now();
+
       try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
+        e.currentTarget.setPointerCapture(e.pointerId);
+        capturedPointerIdRef.current = e.pointerId;
       } catch {
         // ignore
       }
       return;
     }
 
-    if (Math.abs(deltaX) > 4) {
-      hasDraggedRef.current = true;
-    }
+    const now = performance.now();
+    const dtSec = Math.max(0.004, (now - lastMoveTimeRef.current) / 1000);
+    const dxStep = e.clientX - lastMoveXRef.current;
     const { sigma0 } = layoutRef.current;
-    const deltaU = deltaX / (sigma0 || 168);
+    const stepSigma = sigma0 || 120;
+
+    const instVel = -(dxStep / stepSigma) / dtSec;
+    dragVelocityRef.current = dragVelocityRef.current * 0.55 + instVel * 0.45;
+    lastMoveXRef.current = e.clientX;
+    lastMoveTimeRef.current = now;
+
+    const activeDeltaX = e.clientX - dragStartXRef.current;
+    const deltaU = activeDeltaX / stepSigma;
     progressRef.current = dragStartProgressRef.current - deltaU;
     updateCardStyles(progressRef.current);
   };
 
   const handlePointerUp = (e) => {
+    if (dragModeRef.current === 'dragging') {
+      const clampedVel = Math.max(-7, Math.min(7, dragVelocityRef.current));
+      if (Math.abs(clampedVel) > 0.25) {
+        inertiaVelocityRef.current = clampedVel;
+      }
+    }
+    dragModeRef.current = 'idle';
     isDraggingRef.current = false;
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
+    if (capturedPointerIdRef.current !== null) {
+      try {
+        e.currentTarget.releasePointerCapture(capturedPointerIdRef.current);
+      } catch {
+        // ignore
+      }
+      capturedPointerIdRef.current = null;
     }
   };
 
@@ -479,16 +541,16 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
     <div
       ref={containerRef}
       id="process-ribbon-stage"
-      className="relative w-full h-[270px] sm:h-[350px] lg:h-[430px] xl:h-[440px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
+      className="relative w-full h-[236px] sm:h-[340px] lg:h-[430px] xl:h-[440px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
       style={{ perspective: '1400px', touchAction: 'pan-y' }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
     >
-      {/* Left/Right Edge Soft Gradient Masks (Narrow and subtle to prevent premature clipping) */}
-      <div className="absolute left-0 top-0 bottom-0 w-8 sm:w-16 lg:w-20 bg-gradient-to-r from-[#FAFAF7] via-[#FAFAF7]/50 to-transparent pointer-events-none z-30" />
-      <div className="absolute right-0 top-0 bottom-0 w-8 sm:w-16 lg:w-20 bg-gradient-to-l from-[#FAFAF7] via-[#FAFAF7]/50 to-transparent pointer-events-none z-30" />
+      {/* Left/Right Edge Soft Gradient Masks (Subtle on mobile so outer cards stay crisp) */}
+      <div className="absolute left-0 top-0 bottom-0 w-5 sm:w-14 lg:w-20 bg-gradient-to-r from-[#FAFAF7]/85 sm:from-[#FAFAF7] via-[#FAFAF7]/35 to-transparent pointer-events-none z-30" />
+      <div className="absolute right-0 top-0 bottom-0 w-5 sm:w-14 lg:w-20 bg-gradient-to-l from-[#FAFAF7]/85 sm:from-[#FAFAF7] via-[#FAFAF7]/35 to-transparent pointer-events-none z-30" />
 
       {/* 3D Preserved Curved Stage Container */}
       <div
@@ -501,7 +563,7 @@ export const CinematicCurvedGallery = forwardRef(function CinematicCurvedGallery
             ref={(el) => {
               cardElementsRef.current[i] = el;
             }}
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[165px] sm:w-[215px] lg:w-[270px] h-[270px] sm:h-[350px] lg:h-[440px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-md sm:shadow-[0_16px_40px_rgba(0,0,0,0.14)] bg-[#101412] pointer-events-auto cursor-pointer transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(0,0,0,0.24)] flex-shrink-0 border border-black/8 ring-1 ring-black/5"
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[134px] sm:w-[195px] lg:w-[270px] h-[218px] sm:h-[318px] lg:h-[440px] rounded-2xl sm:rounded-3xl overflow-hidden shadow-md sm:shadow-[0_16px_40px_rgba(0,0,0,0.14)] bg-[#101412] pointer-events-auto cursor-pointer transition-shadow duration-300 hover:shadow-[0_24px_55px_rgba(0,0,0,0.24)] flex-shrink-0 border border-black/8 ring-1 ring-black/5"
             style={{
               transformOrigin: '50% 50%',
               backfaceVisibility: 'hidden',

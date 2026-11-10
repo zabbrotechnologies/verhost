@@ -2222,7 +2222,7 @@ export default function App() {
           </div>
 
           {/* Cinematic Curved Gallery Component - Full Viewport Width Stage */}
-          <div className="w-full -mt-4 sm:-mt-6 lg:-mt-8 -mb-2 sm:-mb-3 lg:-mb-4 overflow-hidden">
+          <div className="w-full mt-3 sm:-mt-4 lg:-mt-8 mb-1 sm:-mb-2 lg:-mb-4 overflow-hidden">
             <CinematicCurvedGallery
               ref={galleryRef}
               cards={methodologyCards}
@@ -2234,7 +2234,7 @@ export default function App() {
           <div className="max-w-[1440px] mx-auto px-4 sm:px-8">
             <div 
               id="process-grid" 
-              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-2.5 sm:mt-2 pt-4 sm:pt-5 border-t border-black/10"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto mt-2 sm:mt-2 pt-4 sm:pt-5 border-t border-black/10"
             >
               {methodologyPhases.map((phase, idx) => {
                 const isActive = activeMethodologyPhase === idx;
