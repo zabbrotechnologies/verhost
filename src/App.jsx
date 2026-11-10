@@ -723,6 +723,114 @@ export default function App() {
   const navDirectionRef = useRef('next');
   const lenisRef = useRef(null);
 
+  // ─── Extended Portfolio Showcase (Low-Load Background Preload + Masked VERHOST /projects Route) ───
+  const EXTENDED_WORKS_URL = 'https://verhostsamplewebsites.vercel.app';
+  const [projectsOpen, setProjectsOpen] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.pathname === '/projects' || window.location.hash === '#projects';
+  });
+  const [showcaseMounted, setShowcaseMounted] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.location.pathname === '/projects' || window.location.hash === '#projects';
+  });
+  const [showcaseLoaded, setShowcaseLoaded] = useState(false);
+
+  // Silently preload the showcase website at low priority after initial VERHOST render settles
+  useEffect(() => {
+    if (showcaseMounted) return;
+    let idleId = null;
+    let timerId = null;
+
+    const triggerLowLoadPreload = () => {
+      if ('requestIdleCallback' in window) {
+        idleId = window.requestIdleCallback(() => setShowcaseMounted(true), { timeout: 2500 });
+      } else {
+        setShowcaseMounted(true);
+      }
+    };
+
+    if (document.readyState === 'complete') {
+      timerId = window.setTimeout(triggerLowLoadPreload, 1400);
+    } else {
+      const onWinLoad = () => {
+        timerId = window.setTimeout(triggerLowLoadPreload, 1000);
+      };
+      window.addEventListener('load', onWinLoad, { once: true });
+      timerId = window.setTimeout(triggerLowLoadPreload, 2200);
+      return () => {
+        window.removeEventListener('load', onWinLoad);
+        if (timerId) clearTimeout(timerId);
+        if (idleId && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId);
+      };
+    }
+
+    return () => {
+      if (timerId) clearTimeout(timerId);
+      if (idleId && 'cancelIdleCallback' in window) window.cancelIdleCallback(idleId);
+    };
+  }, [showcaseMounted]);
+
+  // Keep /projects route synced with browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const isProjectsRoute = window.location.pathname === '/projects' || window.location.hash === '#projects';
+      if (isProjectsRoute) {
+        setShowcaseMounted(true);
+        setProjectsOpen(true);
+      } else {
+        setProjectsOpen(false);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Lock background page scroll & handle Escape key while showcase portal is active
+  useEffect(() => {
+    if (!projectsOpen) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    if (lenisRef.current) lenisRef.current.stop();
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeProjectsShowcase();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      if (lenisRef.current) lenisRef.current.start();
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [projectsOpen]);
+
+  const openProjectsShowcase = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setShowcaseMounted(true);
+    setProjectsOpen(true);
+    if (typeof window !== 'undefined' && window.location.pathname !== '/projects') {
+      window.history.pushState({ verhostProjects: true }, '', '/projects');
+    }
+  };
+
+  const closeProjectsShowcase = (scrollTarget) => {
+    setProjectsOpen(false);
+    if (typeof window !== 'undefined' && (window.location.pathname === '/projects' || window.location.hash === '#projects')) {
+      if (window.history.state && window.history.state.verhostProjects && !scrollTarget) {
+        window.history.back();
+      } else {
+        window.history.replaceState(null, '', '/');
+      }
+    }
+    if (scrollTarget) {
+      setTimeout(() => {
+        scrollToSection(null, scrollTarget);
+      }, 60);
+    }
+  };
+
   const scrollToSection = (e, href) => {
     if (e && e.preventDefault) e.preventDefault();
     setMobileMenuOpen(false);
@@ -2381,8 +2489,9 @@ export default function App() {
               {/* Pill Button with Green Circle Arrow matching reference */}
               <div className="flex justify-center">
                 <a 
-                  href="#work"
-                  className="inline-flex items-center gap-3.5 pl-6 pr-2.5 py-2 rounded-full border border-black/15 bg-white text-sm font-sans font-medium text-[#050505] shadow-sm hover:shadow-md hover:border-black/30 transition-all group"
+                  href="/projects"
+                  onClick={openProjectsShowcase}
+                  className="inline-flex items-center gap-3.5 pl-6 pr-2.5 py-2 rounded-full border border-black/15 bg-white text-sm font-sans font-medium text-[#050505] shadow-sm hover:shadow-md hover:border-black/30 transition-all group cursor-pointer"
                 >
                   <span>See more Projects</span>
                   <span className="w-8 h-8 rounded-full bg-[#16A34A] flex items-center justify-center text-white transition-transform duration-300 group-hover:translate-x-0.5">
@@ -3338,6 +3447,81 @@ export default function App() {
 
         </div>
       </footer>
+
+      {/* ─── EMBEDDED EXTENDED PORTFOLIO SHOWCASE (Background Preloaded, Masked VERHOST URL) ─── */}
+      {showcaseMounted && (
+        <div
+          id="projects-showcase-portal"
+          role="dialog"
+          aria-modal={projectsOpen}
+          aria-hidden={!projectsOpen}
+          aria-label="VERHOST Extended Works Portfolio"
+          className="fixed inset-0 flex flex-col bg-[#050907] transition-opacity duration-200"
+          style={
+            projectsOpen
+              ? {
+                  zIndex: 70,
+                  opacity: 1,
+                  visibility: 'visible',
+                  pointerEvents: 'auto',
+                  transform: 'translate3d(0, 0, 0)'
+                }
+              : {
+                  zIndex: -1,
+                  opacity: 0,
+                  visibility: 'hidden',
+                  pointerEvents: 'none',
+                  transform: 'translate3d(100vw, 0, 0)'
+                }
+          }
+        >
+          {/* Compact VERHOST Return Bar (matches showcase #050907 dark emerald theme) */}
+          <div className="shrink-0 h-12 sm:h-13 px-3 sm:px-6 bg-[#050907] border-b border-white/10 flex items-center justify-between gap-3 text-white">
+            <button
+              type="button"
+              onClick={() => closeProjectsShowcase()}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/15 text-xs font-mono font-bold uppercase tracking-wider text-white transition-colors cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-sm text-[#19C763]">arrow_back</span>
+              <span>Back to VERHOST</span>
+            </button>
+
+            <div className="hidden sm:flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-white/60">
+              <span className="w-2 h-2 rounded-full bg-[#19C763]" />
+              <span>VERHOST EXTENDED WORKS</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => closeProjectsShowcase('#contact')}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#16A34A] hover:bg-[#19C763] text-white text-[11px] font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              <span>Start a Project</span>
+              <span className="material-symbols-outlined text-sm">north_east</span>
+            </button>
+          </div>
+
+          {/* Live Preloaded Showcase Viewport */}
+          <div className="relative flex-1 w-full bg-[#050907] overflow-hidden">
+            {!showcaseLoaded && projectsOpen && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#050907] text-white px-6 text-center">
+                <div className="w-8 h-8 rounded-full border-2 border-[#19C763]/30 border-t-[#19C763] animate-spin mb-3" />
+                <div className="font-mono text-xs uppercase tracking-[0.22em] text-[#19C763]">
+                  LOADING VERHOST PORTFOLIO...
+                </div>
+              </div>
+            )}
+            <iframe
+              src={EXTENDED_WORKS_URL}
+              title="VERHOST Extended Digital Works Portfolio"
+              onLoad={() => setShowcaseLoaded(true)}
+              referrerPolicy="no-referrer"
+              allow="fullscreen; autoplay"
+              className="w-full h-full border-0 block bg-[#050907]"
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );
