@@ -5,6 +5,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CinematicCurvedGallery } from './components/CinematicCurvedGallery';
 
 gsap.registerPlugin(ScrollTrigger);
+ScrollTrigger.config({ ignoreMobileResize: true });
 
 // ─── WHY VERHOST: Cursor-Reactive Parallax Row with Waterdrop Reveal ──────────
 function WhyPrincipleRow({ pr, idx, isActive, onActivate }) {
@@ -533,8 +534,9 @@ export default function App() {
   const heroBgRef = useRef(null);
   const heroContentRef = useRef(null);
   const vhWatermarkRef = useRef(null);
+  const headerRef = useRef(null);
+  const isScrolledRef = useRef(false);
 
-  const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeCapability, setActiveCapability] = useState(0);
   const [activeWhy, setActiveWhy] = useState(0);
@@ -1236,7 +1238,8 @@ export default function App() {
   ];
 
   useEffect(() => {
-    // Lenis Smooth Scroll (Desktop with fine pointer only, preserving native hardware-accelerated 60/120Hz touch scrolling on mobile)
+    // Lenis Smooth Scroll & ScrollTriggers: Desktop with fine pointer only.
+    // On mobile/touch, keep 100% native hardware-accelerated touch scrolling with zero GSAP scroll listeners or scrubbers.
     const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024 && !window.matchMedia('(pointer: coarse)').matches;
     let lenis = null;
     let tickerCallback = null;
@@ -1255,28 +1258,41 @@ export default function App() {
         lenis.raf(time * 1000);
       };
       gsap.ticker.add(tickerCallback);
-    } else {
-      window.addEventListener('scroll', ScrollTrigger.update, { passive: true });
+      gsap.ticker.lagSmoothing(500, 33);
     }
-    gsap.ticker.lagSmoothing(500, 33);
 
-    // Scroll state for Navbar
+    // Direct DOM header class toggle on scroll (zero React re-renders during scroll)
     const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
+      const nextScrolled = window.scrollY > 40;
+      if (nextScrolled === isScrolledRef.current || !headerRef.current) return;
+      isScrolledRef.current = nextScrolled;
+      const el = headerRef.current;
+      if (nextScrolled) {
+        el.classList.remove('py-4', 'sm:py-5', 'shadow-[0_4px_25px_rgba(0,0,0,0.04)]');
+        el.classList.add('py-3.5', 'shadow-[0_10px_35px_rgba(0,0,0,0.08)]');
+      } else {
+        el.classList.remove('py-3.5', 'shadow-[0_10px_35px_rgba(0,0,0,0.08)]');
+        el.classList.add('py-4', 'sm:py-5', 'shadow-[0_4px_25px_rgba(0,0,0,0.04)]');
+      }
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
 
     const ctx = gsap.context(() => {
 
       // ─── HERO: Sequential load reveal ───────────────────────────────────────
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-      tl.from('#hero-headline span.reveal-line', { opacity: 0, y: 40, stagger: 0.15, duration: 0.9, delay: 0.2 })
-        .from('#hero-desc', { opacity: 0, y: 25, duration: 0.8 }, '-=0.4')
-        .from('#hero-metrics', { opacity: 0, y: 25, duration: 0.8 }, '-=0.4')
-        .from('#hero-cta-group', { opacity: 0, y: 20, duration: 0.8 }, '-=0.4');
+      tl.from('#hero-headline span.reveal-line', { opacity: 0, y: isDesktop ? 40 : 20, stagger: isDesktop ? 0.15 : 0.08, duration: isDesktop ? 0.9 : 0.55, delay: isDesktop ? 0.2 : 0.05 })
+        .from('#hero-desc', { opacity: 0, y: isDesktop ? 25 : 15, duration: isDesktop ? 0.8 : 0.45 }, '-=0.35')
+        .from('#hero-metrics', { opacity: 0, y: isDesktop ? 25 : 15, duration: isDesktop ? 0.8 : 0.45 }, '-=0.35')
+        .from('#hero-cta-group', { opacity: 0, y: isDesktop ? 20 : 12, duration: isDesktop ? 0.8 : 0.45 }, '-=0.35');
 
-      // ─── HERO: Parallax background on scroll ────────────────────────────────
-      if (heroBgRef.current && isDesktop) {
+      if (!isDesktop) {
+        return;
+      }
+
+      // ─── HERO: Parallax background on scroll (Desktop only) ─────────────────
+      if (heroBgRef.current) {
         gsap.fromTo(heroBgRef.current,
           { y: -50, scale: 1.12 },
           { y: 120, scale: 1.0, ease: 'none',
@@ -1336,14 +1352,12 @@ export default function App() {
         opacity: 0, y: 50, duration: 1, ease: 'power3.out',
         scrollTrigger: { trigger: '#solutions', start: 'top 80%', toggleActions: 'play none none none' }
       });
-      if (isDesktop) {
-        document.querySelectorAll('.transformation-row').forEach((row, i) => {
-          gsap.from(row, {
-            opacity: 0, x: -40, duration: 0.8, delay: i * 0.06, ease: 'power2.out',
-            scrollTrigger: { trigger: row, start: 'top 88%', toggleActions: 'play none none none' }
-          });
+      document.querySelectorAll('.transformation-row').forEach((row, i) => {
+        gsap.from(row, {
+          opacity: 0, x: -40, duration: 0.8, delay: i * 0.06, ease: 'power2.out',
+          scrollTrigger: { trigger: row, start: 'top 88%', toggleActions: 'play none none none' }
         });
-      }
+      });
 
       // ─── CAPABILITIES SECTION: Header reveal ────────────────────────────────
       if (document.querySelector('#capabilities-header')) {
@@ -1440,22 +1454,10 @@ export default function App() {
         scrollTrigger: { trigger: 'footer', start: 'top 90%', toggleActions: 'play none none none' }
       });
 
-      // ─── HORIZONTAL SCROLLING MARQUEE for section separators ─────────────────
-      // (runs continuously via gsap)
-      gsap.to('.marquee-track', {
-        xPercent: -50,
-        repeat: -1,
-        duration: 18,
-        ease: 'none'
-      });
-
     });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      if (!isDesktop) {
-        window.removeEventListener('scroll', ScrollTrigger.update);
-      }
       lenisRef.current = null;
       if (lenis) lenis.destroy();
       if (tickerCallback) gsap.ticker.remove(tickerCallback);
@@ -1488,11 +1490,8 @@ export default function App() {
       
       {/* 1. ALWAYS SOLID WHITE NAVIGATION BAR */}
       <header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white border-b border-black/10 ${
-          scrolled 
-            ? 'py-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.08)]' 
-            : 'py-4 sm:py-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)]'
-        }`}
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 transition-shadow duration-300 bg-white border-b border-black/10 py-4 sm:py-5 shadow-[0_4px_25px_rgba(0,0,0,0.04)]"
         role="banner"
       >
         <div className="max-w-[1360px] mx-auto px-6 sm:px-10 flex items-center justify-between">
@@ -1546,7 +1545,7 @@ export default function App() {
             <button 
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 text-[#050505] hover:text-[#16A34A] focus:outline-none rounded-md border border-black/10 bg-white/70 backdrop-blur-md"
+              className="lg:hidden p-2 text-[#050505] hover:text-[#16A34A] focus:outline-none rounded-md border border-black/10 bg-white"
               aria-label="Toggle Navigation Menu"
             >
               <span className="material-symbols-outlined text-2xl">{mobileMenuOpen ? 'close' : 'menu'}</span>
@@ -1554,9 +1553,9 @@ export default function App() {
           </div>
         </div>
 
-        {/* Mobile Dropdown Menu in White Liquid Glass */}
+        {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div id="mobile-nav-menu" className="lg:hidden border-t border-black/10 bg-white/95 backdrop-blur-2xl px-6 py-6 flex flex-col space-y-3 font-mono text-xs font-bold uppercase tracking-wider text-[#050505] shadow-2xl">
+          <div id="mobile-nav-menu" className="lg:hidden border-t border-black/10 bg-white px-6 py-6 flex flex-col space-y-3 font-mono text-xs font-bold uppercase tracking-wider text-[#050505] shadow-2xl">
             {[
               { name: 'SERVICES', href: '#services' },
               { name: 'WORKS', href: '#works' },
@@ -1596,10 +1595,10 @@ export default function App() {
         >
           {/* Parallax Background Visual & High-End Agency Architectural Depth */}
           <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            <div ref={heroBgRef} className="w-full h-[150%] -top-[25%] absolute will-change-transform">
+            <div ref={heroBgRef} className="w-full h-full top-0 lg:h-[150%] lg:-top-[25%] absolute lg:will-change-transform">
               <img 
                 alt="VERHOST Global Headquarters — Premier Sovereign Digital & AI Engineering Agency in Downtown Manhattan, New York" 
-                className="w-full h-full object-cover filter brightness-[0.68] contrast-[1.12] saturate-[1.05]" 
+                className="w-full h-full object-cover lg:filter lg:brightness-[0.68] lg:contrast-[1.12] lg:saturate-[1.05] opacity-65 lg:opacity-100" 
                 src="/hero-bg.webp"
                 fetchPriority="high"
                 loading="eager"
@@ -1609,9 +1608,9 @@ export default function App() {
               />
               {/* Layered US Agency Luxury Obsidian & Emerald Vignettes */}
               <div className="absolute inset-0 bg-gradient-to-b from-[#050806]/90 via-[#050806]/55 to-[#050806]/98"></div>
-              <div className="absolute inset-0 bg-[radial-gradient(#19C763_1px,transparent_1px)] [background-size:48px_48px] opacity-15"></div>
+              <div className="hidden sm:block absolute inset-0 bg-[radial-gradient(#19C763_1px,transparent_1px)] [background-size:48px_48px] opacity-15"></div>
               <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] sm:w-[600px] lg:w-[850px] h-[260px] sm:h-[450px] lg:h-[600px] bg-[#16A34A]/12 rounded-full blur-[60px] sm:blur-[110px] lg:blur-[170px]"></div>
-              <div className="absolute bottom-10 right-10 w-[260px] sm:w-[400px] lg:w-[550px] h-[220px] sm:h-[350px] lg:h-[450px] bg-[#19C763]/10 rounded-full blur-[50px] sm:blur-[100px] lg:blur-[150px]"></div>
+              <div className="hidden sm:block absolute bottom-10 right-10 w-[400px] lg:w-[550px] h-[350px] lg:h-[450px] bg-[#19C763]/10 rounded-full blur-[100px] lg:blur-[150px]"></div>
             </div>
           </div>
 
@@ -1619,11 +1618,11 @@ export default function App() {
           <div ref={heroContentRef} className="relative z-10 max-w-5xl mx-auto w-full flex flex-col items-center text-center my-auto">
             
             {/* Editorial Headline / Quote in Butler Serif */}
-            <h1 id="hero-headline" className="font-display uppercase tracking-[-0.02em] text-white mb-10 w-full drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
+            <h1 id="hero-headline" className="font-display uppercase tracking-[-0.02em] text-white mb-10 w-full lg:drop-shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
               <span className="reveal-line block text-[44px] sm:text-[76px] md:text-[98px] lg:text-[114px] xl:text-[126px] font-normal leading-[0.90] tracking-tight">
                 WE ARCHITECT
               </span>
-              <span className="reveal-line block text-[44px] sm:text-[76px] md:text-[98px] lg:text-[114px] xl:text-[126px] font-light italic leading-[0.90] text-[#19C763] drop-shadow-[0_0_40px_rgba(25,199,99,0.5)]">
+              <span className="reveal-line block text-[44px] sm:text-[76px] md:text-[98px] lg:text-[114px] xl:text-[126px] font-light italic leading-[0.90] text-[#19C763] lg:drop-shadow-[0_0_40px_rgba(25,199,99,0.5)]">
                 SOVEREIGN DIGITAL
               </span>
               <span className="reveal-line block text-[40px] sm:text-[70px] md:text-[90px] lg:text-[106px] xl:text-[118px] font-normal leading-[0.90] tracking-tight">
@@ -1668,7 +1667,7 @@ export default function App() {
               <button 
                 type="button"
                 onClick={() => setReelModalOpen(true)}
-                className="inline-flex items-center gap-3 px-7 py-4 bg-black/60 hover:bg-white/10 text-white font-mono text-xs sm:text-sm font-bold tracking-widest uppercase border border-white/25 transition-all duration-300 backdrop-blur-md hover:border-[#19C763]/60 group"
+                className="inline-flex items-center gap-3 px-7 py-4 bg-black/75 lg:bg-black/60 hover:bg-white/10 text-white font-mono text-xs sm:text-sm font-bold tracking-widest uppercase border border-white/25 transition-all duration-300 lg:backdrop-blur-md hover:border-[#19C763]/60 group"
               >
                 <span className="w-2.5 h-2.5 rounded-full bg-[#19C763] animate-pulse"></span>
                 <span>WATCH 2026 AGENCY REEL</span>
@@ -1823,7 +1822,7 @@ export default function App() {
                 <div className="relative w-full max-w-lg lg:max-w-none group scale-105 sm:scale-110 lg:scale-[1.16] xl:scale-[1.22] origin-center transition-transform duration-500">
                   <img 
                     alt="Sovereign Mobile Product Engineering Showcase" 
-                    className="w-full h-auto object-contain filter drop-shadow-[0_25px_50px_rgba(0,0,0,0.18)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                    className="w-full h-auto object-contain lg:filter lg:drop-shadow-[0_25px_50px_rgba(0,0,0,0.18)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                     src="/mobile-showcase-transparent.webp"
                     width="1003"
                     height="711"
@@ -2053,32 +2052,42 @@ export default function App() {
                         ? 'none' 
                         : 'transform 480ms cubic-bezier(0.22, 1, 0.36, 1), opacity 480ms cubic-bezier(0.22, 1, 0.36, 1)',
                     }}
-                    className={`group absolute left-1/2 top-1/2 w-[78vw] sm:w-[290px] md:w-[320px] lg:w-[340px] xl:w-[360px] 2xl:w-[380px] h-[450px] sm:h-[480px] md:h-[510px] lg:h-[530px] xl:h-[550px] 2xl:h-[570px] rounded-[28px] sm:rounded-[32px] overflow-hidden will-change-[transform,opacity] select-none bg-black ${
+                    className={`group absolute left-1/2 top-1/2 w-[78vw] sm:w-[290px] md:w-[320px] lg:w-[340px] xl:w-[360px] 2xl:w-[380px] h-[450px] sm:h-[480px] md:h-[510px] lg:h-[530px] xl:h-[550px] 2xl:h-[570px] rounded-[28px] sm:rounded-[32px] overflow-hidden ${
+                      isVisible ? 'will-change-[transform,opacity]' : ''
+                    } select-none bg-black ${
                       isActive ? 'cursor-default' : 'cursor-pointer hover:opacity-95'
                     }`}
                   >
-                    {/* Base Static Grayscale Image Layer (GPU-cached) */}
+                    {/* Base Image Layer (Single optimized layer on mobile; grayscale base + full-color crossfade on desktop) */}
                     <img 
                       alt={srv.alt}
-                      src={srv.image}
+                      src={isMobile ? srv.image.replace('w=1600', 'w=720') : srv.image}
                       loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-[0.92] brightness-[0.88] select-none pointer-events-none"
+                      decoding="async"
+                      className={`absolute inset-0 w-full h-full object-cover select-none pointer-events-none ${
+                        isMobile
+                          ? 'brightness-90'
+                          : 'filter grayscale contrast-[0.92] brightness-[0.88]'
+                      }`}
                     />
 
-                    {/* Full Color Image Layer - smooth GPU opacity crossfade */}
-                    <img 
-                      alt=""
-                      src={srv.image}
-                      loading="lazy"
-                      aria-hidden="true"
-                      style={{ opacity: isActive ? 1 : 0 }}
-                      className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out select-none pointer-events-none"
-                    />
+                    {/* Full Color Image Layer - Desktop GPU opacity crossfade */}
+                    {!isMobile && (
+                      <img 
+                        alt=""
+                        src={srv.image}
+                        loading="lazy"
+                        decoding="async"
+                        aria-hidden="true"
+                        style={{ opacity: isActive ? 1 : 0 }}
+                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out select-none pointer-events-none"
+                      />
+                    )}
 
                     {/* Inactive Card Dimming Scrim */}
                     <div 
                       aria-hidden="true"
-                      style={{ opacity: isActive ? 0 : 0.25 }}
+                      style={{ opacity: isActive ? 0 : 0.28 }}
                       className="absolute inset-0 bg-black transition-opacity duration-500 ease-out pointer-events-none"
                     />
 
@@ -2088,19 +2097,19 @@ export default function App() {
                         <a
                           href="#contact"
                           aria-label={`Inquire about ${srv.title}`}
-                          className="w-10 h-10 rounded-full bg-white/20 hover:bg-[#16A34A] backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
+                          className="w-10 h-10 rounded-full bg-black/45 lg:bg-white/20 hover:bg-[#16A34A] lg:backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                         >
                           <span className="material-symbols-outlined text-lg">north_east</span>
                         </a>
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white/70 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-black/40 lg:bg-white/15 lg:backdrop-blur-md border border-white/20 text-white/70 flex items-center justify-center">
                           <span className="material-symbols-outlined text-lg">north_east</span>
                         </div>
                       )}
                     </div>
 
                     {/* ─── BOTTOM FROSTED GLASS EFFECT PANEL (MATCHING REFERENCE) ─── */}
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-5 sm:p-6 backdrop-blur-xl bg-black/50 border-t border-white/20 text-left flex flex-col justify-end transition-colors duration-300">
+                    <div className="absolute inset-x-0 bottom-0 z-20 p-5 sm:p-6 bg-black/75 lg:bg-black/50 lg:backdrop-blur-xl border-t border-white/20 text-left flex flex-col justify-end transition-colors duration-300">
                       {/* Rating Stars & Practice Indicator */}
                       <div className="flex items-center gap-1 text-amber-400 text-xs mb-1.5 select-none">
                         <span>★</span>
@@ -2284,7 +2293,7 @@ export default function App() {
                 <h2 className="font-display font-bold text-4xl sm:text-6xl lg:text-[76px] leading-[0.98] tracking-[-0.04em] uppercase text-white mb-8">
                   <span className="editorial-reveal-line block">GOOD TECHNOLOGY</span>
                   <span className="editorial-reveal-line block text-white/90">DISAPPEARS INTO</span>
-                  <span className="editorial-reveal-line block text-[#19C763] drop-shadow-[0_0_30px_rgba(25,199,99,0.5)]">GOOD BUSINESS.</span>
+                  <span className="editorial-reveal-line block text-[#19C763] lg:drop-shadow-[0_0_30px_rgba(25,199,99,0.5)]">GOOD BUSINESS.</span>
                 </h2>
 
                 <div className="w-24 h-[2px] bg-[#19C763] mb-8"></div>
@@ -2310,12 +2319,12 @@ export default function App() {
               <div className="lg:col-span-5 flex items-center justify-center">
                 <div id="transition-image-wrap" className="relative w-full aspect-[1024/788] group">
                   {/* Subtle Ambient Green Core Glow */}
-                  <div className="absolute inset-x-[15%] inset-y-[20%] bg-[#19C763]/20 blur-[50px] rounded-full pointer-events-none"></div>
+                  <div className="hidden md:block absolute inset-x-[15%] inset-y-[20%] bg-[#19C763]/20 blur-[50px] rounded-full pointer-events-none"></div>
 
                   {/* Transparent 3D Cloud Architecture Hub */}
                   <img 
                     alt="VERHOST Autonomous Sovereign Cloud Architecture and Neural Node Network" 
-                    className="relative z-10 w-full h-full object-contain filter drop-shadow-[0_25px_60px_rgba(25,199,99,0.28)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
+                    className="relative z-10 w-full h-full object-contain lg:filter lg:drop-shadow-[0_25px_60px_rgba(25,199,99,0.28)] transition-transform duration-700 ease-out group-hover:scale-[1.02]"
                     src="/cloud-architecture-hub-transparent.webp"
                     width="1024"
                     height="788"
@@ -2342,8 +2351,8 @@ export default function App() {
                       </radialGradient>
                     </defs>
 
-                    {/* Central Cloud Node Breathing Ambient Pulse */}
-                    <circle cx="512" cy="420" r="140" fill="url(#center-hub-pulse)">
+                    {/* Central Cloud Node Breathing Ambient Pulse (Desktop only) */}
+                    <circle className="hidden md:inline" cx="512" cy="420" r="140" fill="url(#center-hub-pulse)">
                       <animate attributeName="r" values="130;160;130" dur="3.5s" repeatCount="indefinite" />
                       <animate attributeName="opacity" values="0.6;1;0.6" dur="3.5s" repeatCount="indefinite" />
                     </circle>
@@ -2875,12 +2884,12 @@ export default function App() {
           {/* Subtle Scaling VH Logo Watermark in Background */}
           <div 
             ref={vhWatermarkRef}
-            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none will-change-transform"
+            className="absolute inset-0 flex items-center justify-center pointer-events-none select-none lg:will-change-transform"
           >
             <img 
               alt="VERHOST Monogram Logo Watermark" 
               src="/verhost-logo-white.webp" 
-              className="w-[850px] sm:w-[1100px] h-auto object-contain opacity-5 filter brightness-100"
+              className="w-[850px] sm:w-[1100px] h-auto object-contain opacity-5"
               loading="lazy"
               decoding="async"
             />
@@ -2897,7 +2906,7 @@ export default function App() {
 
             <h2 id="cta-headline" className="font-display font-bold text-4xl sm:text-7xl lg:text-[88px] leading-[0.95] tracking-tight uppercase text-white mb-8">
               HAVE AN IDEA?<br />
-              <span className="text-[#19C763] drop-shadow-[0_0_35px_rgba(25,199,99,0.5)]">LET'S BUILD IT.</span>
+              <span className="text-[#19C763] lg:drop-shadow-[0_0_35px_rgba(25,199,99,0.5)]">LET'S BUILD IT.</span>
             </h2>
 
             <p id="cta-subtext" className="text-lg sm:text-2xl text-white/80 font-normal leading-relaxed mb-12 max-w-xl">

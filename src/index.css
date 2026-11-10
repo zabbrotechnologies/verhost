@@ -166,3 +166,43 @@
     transform: scale(1.025);
   }
 }
+
+/* ─── GPU-COMPOSITED MARQUEE (ZERO JS MAIN-THREAD TICKER OVERHEAD) ─── */
+@keyframes marqueeSlide {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-track {
+  animation: marqueeSlide 18s linear infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ─── MOBILE VIEWPORT SCROLL OPTIMIZATIONS ─── */
+@media (max-width: 1023px) {
+  body {
+    text-rendering: optimizeSpeed;
+  }
+
+  #transition-statement,
+  #solutions,
+  #about,
+  #why,
+  #faq,
+  #final-cta-section,
+  #contact,
+  footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 750px;
+  }
+}
