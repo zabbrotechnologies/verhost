@@ -262,6 +262,171 @@ function WhyPrincipleRow({ pr, idx, isActive, onActivate }) {
   );
 }
 
+// ─── WHY VERHOST (MOBILE CONCEPT): Architectural Spotlight Stage + 2x2 Selector Matrix ───
+function WhyMobileShowcase({ principles, activeIdx, onSelect }) {
+  const swipeStartRef = useRef({ x: 0, y: 0 });
+  const activePrinciple = principles[activeIdx] || principles[0];
+
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    if (!touch) return;
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+  };
+
+  const handleTouchEnd = (e) => {
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+    const dx = touch.clientX - swipeStartRef.current.x;
+    const dy = touch.clientY - swipeStartRef.current.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      if (dx < 0) {
+        onSelect((activeIdx + 1) % principles.length);
+      } else {
+        onSelect((activeIdx - 1 + principles.length) % principles.length);
+      }
+    }
+  };
+
+  return (
+    <div className="lg:hidden w-full select-none" aria-label="Operating Principles Interactive Showcase">
+      {/* ─── Featured Architectural Spotlight Card ─── */}
+      <div
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative rounded-2xl overflow-hidden bg-[#0A0D0B] text-white border border-black/15 shadow-[0_18px_42px_rgba(0,0,0,0.14)]"
+      >
+        {/* Architectural Visual Stage */}
+        <div className="relative h-[196px] sm:h-[240px] w-full overflow-hidden bg-[#101412]">
+          {principles.map((pr, idx) => {
+            const isCurrent = idx === activeIdx;
+            const mobileSrc = pr.image.includes('w=1920')
+              ? pr.image.replace('w=1920', 'w=900')
+              : pr.image;
+            return (
+              <img
+                key={pr.num}
+                src={mobileSrc}
+                alt={pr.title}
+                loading="lazy"
+                decoding="async"
+                aria-hidden={!isCurrent}
+                className={`absolute inset-0 w-full h-full object-cover transition-[opacity,transform] duration-500 ease-out pointer-events-none ${
+                  isCurrent ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.03]'
+                }`}
+              />
+            );
+          })}
+
+          {/* Smooth Dark Editorial Gradient Scrim */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0A0D0B] via-[#0A0D0B]/45 to-black/20 pointer-events-none" />
+
+          {/* Top Bar: Principle Counter + Prev/Next Controls */}
+          <div className="relative z-10 p-3.5 sm:p-4 flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0A0D0B]/85 border border-white/15 font-mono text-[10px] font-bold tracking-widest uppercase text-white">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#19C763]" />
+              <span>PRINCIPLE {activePrinciple.num} / 0{principles.length}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onSelect((activeIdx - 1 + principles.length) % principles.length)}
+                aria-label="Previous operating principle"
+                className="w-9 h-9 rounded-full bg-[#0A0D0B]/85 border border-white/15 text-white flex items-center justify-center active:scale-95 transition-transform"
+              >
+                <span className="material-symbols-outlined text-base">arrow_back</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onSelect((activeIdx + 1) % principles.length)}
+                aria-label="Next operating principle"
+                className="w-9 h-9 rounded-full bg-[#16A34A] border border-[#19C763]/40 text-white flex items-center justify-center active:scale-95 transition-transform"
+              >
+                <span className="material-symbols-outlined text-base">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Subtle Oversized Numeral Watermark */}
+          <div
+            aria-hidden="true"
+            className="absolute bottom-1 right-4 font-display font-black text-7xl sm:text-8xl leading-none text-white/[0.08] pointer-events-none"
+          >
+            {activePrinciple.num}
+          </div>
+        </div>
+
+        {/* Editorial Narrative Content */}
+        <div className="relative z-10 px-5 pt-1 pb-5 sm:px-6 sm:pb-6 bg-[#0A0D0B]">
+          <h3 className="font-display font-bold text-2xl sm:text-3xl uppercase tracking-tight text-[#19C763] mb-2 leading-[1.05]">
+            {activePrinciple.title}
+          </h3>
+          <p className="text-[13.5px] sm:text-[15px] text-white/80 leading-relaxed font-sans min-h-[66px]">
+            {activePrinciple.desc}
+          </p>
+
+          {/* Bottom Step Progress Rail */}
+          <div className="mt-4 pt-3.5 border-t border-white/10 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-1.5 flex-1">
+              {principles.map((pr, idx) => (
+                <button
+                  key={pr.num}
+                  type="button"
+                  onClick={() => onSelect(idx)}
+                  aria-label={`View principle ${pr.num}: ${pr.title}`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    idx === activeIdx ? 'flex-[2.2] bg-[#19C763]' : 'flex-1 bg-white/15'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="font-mono text-[9.5px] uppercase tracking-widest text-white/45 shrink-0">
+              SWIPE OR TAP
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── 2x2 Architectural Principle Index Selector ─── */}
+      <div className="grid grid-cols-2 gap-2.5 mt-3" role="tablist" aria-label="Operating principles selector">
+        {principles.map((pr, idx) => {
+          const isCurrent = idx === activeIdx;
+          return (
+            <button
+              key={pr.num}
+              type="button"
+              role="tab"
+              aria-selected={isCurrent}
+              onClick={() => onSelect(idx)}
+              className={`p-3.5 min-h-[82px] rounded-xl border text-left flex flex-col justify-between transition-colors duration-200 cursor-pointer active:scale-[0.98] ${
+                isCurrent
+                  ? 'bg-[#0B0F0C] text-white border-[#16A34A] ring-1 ring-[#16A34A]/40 shadow-md'
+                  : 'bg-[#FAFAF7] text-[#050505] border-black/10 hover:border-black/25'
+              }`}
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className={`font-mono text-[11px] font-bold tracking-wider ${
+                  isCurrent ? 'text-[#19C763]' : 'text-[#16A34A]'
+                }`}>
+                  {pr.num}
+                </span>
+                {isCurrent ? (
+                  <span className="w-2 h-2 rounded-full bg-[#19C763]" />
+                ) : (
+                  <span className="material-symbols-outlined text-sm text-black/35">north_east</span>
+                )}
+              </div>
+              <span className="font-display font-bold text-[12.5px] sm:text-sm uppercase tracking-tight leading-tight mt-2">
+                {pr.title}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── 3-SEGMENT CONTINUOUS DIRECTIONAL BRAND-GREEN CHEVRON ARROW (ENLARGED) ────
 function AnimatedChevronArrow({ isActive, prefersReducedMotion, compact = false }) {
   const segments = [0, 1, 2]; // 3 enlarged arrows
@@ -2813,8 +2978,15 @@ export default function App() {
               </p>
             </div>
 
-            {/* Numbered Rows with Full-Row Parallax Image Rectangles */}
-            <div id="why-list" className="divide-y divide-black/10 border-y border-black/10">
+            {/* Mobile Interactive Spotlight Concept (< 1024px only) */}
+            <WhyMobileShowcase
+              principles={principles}
+              activeIdx={activeWhy}
+              onSelect={setActiveWhy}
+            />
+
+            {/* Desktop Numbered Rows with Full-Row Waterdrop Reveal (>= 1024px unchanged) */}
+            <div id="why-list" className="hidden lg:block divide-y divide-black/10 border-y border-black/10">
               {principles.map((pr, idx) => (
                 <WhyPrincipleRow
                   key={pr.num}
