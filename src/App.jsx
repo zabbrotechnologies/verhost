@@ -3,12 +3,13 @@ import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CinematicCurvedGallery } from './components/CinematicCurvedGallery';
+import ChatbotWidget from './components/ChatbotWidget';
 
 gsap.registerPlugin(ScrollTrigger);
 ScrollTrigger.config({ ignoreMobileResize: true });
 
 // ─── WHY VERHOST: Cursor-Reactive Parallax Row with Waterdrop Reveal ──────────
-function WhyPrincipleRow({ pr, idx, isActive, onActivate }) {
+function WhyPrincipleRow({ pr, idx, onActivate }) {
   const rowRef = useRef(null);
   const imageRef = useRef(null);
   const revealLayerRef = useRef(null);
@@ -703,14 +704,11 @@ export default function App() {
   const isScrolledRef = useRef(false);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeCapability, setActiveCapability] = useState(0);
   const [activeWhy, setActiveWhy] = useState(0);
-  const [activeProcess, setActiveProcess] = useState(0);
   const [activeAboutPillar, setActiveAboutPillar] = useState(0);
   const [activeSolutionRow, setActiveSolutionRow] = useState(null);
   const [openFaq, setOpenFaq] = useState(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [activeHeroTab, setActiveHeroTab] = useState(0);
   const [reelModalOpen, setReelModalOpen] = useState(false);
   const [activeServiceIdx, setActiveServiceIdx] = useState(0);
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -1028,12 +1026,14 @@ export default function App() {
   };
 
   const getCardOffset = (idx, current) => {
-    let diff = (idx - current) % 6;
-    if (diff < -3) diff += 6;
-    if (diff > 3) diff -= 6;
-    // Tie-breaker for the 6th card (diff 3 / -3) to maintain consistent slide direction
-    if (diff === 3 || diff === -3) {
-      diff = navDirectionRef.current === 'next' ? -3 : 3;
+    const total = services.length;
+    const half = Math.floor(total / 2);
+    let diff = (idx - current) % total;
+    if (diff < -half) diff += total;
+    if (diff > half) diff -= total;
+    // Tie-breaker for opposite card to maintain consistent slide direction
+    if (total % 2 === 0 && (diff === half || diff === -half)) {
+      diff = navDirectionRef.current === 'next' ? -half : half;
     }
     return diff;
   };
@@ -1113,53 +1113,89 @@ export default function App() {
       tagline: 'Build your digital presence.',
       description: 'Premium websites, web applications, and digital experiences engineered to make your business visible, credible, and conversion-ready.',
       deliverables: ['Business Websites', 'Web Applications', 'E-commerce Platforms', 'Interactive Digital Experiences'],
+      whatWeDo: [
+        'E-Commerce Platforms & Web Stores',
+        'High-Converting Landing Pages & Funnels',
+        'Custom Business & Web Applications',
+        'SEO, Speed & Mobile Optimization'
+      ],
       image: 'https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?q=80&w=1600&auto=format&fit=crop',
       alt: 'VERHOST Digital Presence — Premium websites and digital experiences'
     },
     {
       num: '02',
-      title: 'INTELLIGENT SOLUTIONS',
-      tagline: 'Turn AI into business capability.',
-      description: 'AI and machine-learning systems designed to solve real operational problems, automate decisions, and uncover predictive intelligence.',
-      deliverables: ['Predictive AI', 'Computer Vision', 'Custom ML Models', 'AI-Powered Applications'],
-      image: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST Intelligent Solutions — AI and machine-learning systems'
-    },
-    {
-      num: '03',
-      title: 'BUSINESS INTELLIGENCE',
-      tagline: 'Turn your data into decisions.',
-      description: 'Transform fragmented business data into clear dashboards, actionable insights, and intelligent reporting systems.',
-      deliverables: ['Business Dashboards', 'Power BI Solutions', 'Data Pipelines', 'Automated Insights'],
-      image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1600&auto=format&fit=crop',
-      alt: 'VERHOST Business Intelligence — Dashboards and actionable insights'
-    },
-    {
-      num: '04',
       title: 'AI CONVERSATIONS',
       tagline: 'Let your business communicate 24/7.',
       description: 'Intelligent conversational systems that understand customers, access your business knowledge, and handle conversations across digital channels.',
       deliverables: ['AI Chatbots', 'Knowledge Assistants', 'Customer Support Agents', 'Multilingual AI'],
+      whatWeDo: [
+        '24/7 Autonomous Customer Support Chatbots',
+        'Company Knowledge Base AI (RAG)',
+        'WhatsApp & Multi-Channel AI Bots',
+        'Multilingual & Voice-Enabled AI Agents'
+      ],
       image: 'https://images.unsplash.com/photo-1531746790731-6c087fecd65a?q=80&w=1600&auto=format&fit=crop',
       alt: 'VERHOST AI Conversations — Intelligent conversational systems'
     },
     {
-      num: '05',
+      num: '03',
       title: 'GROWTH CREATIVE',
       tagline: 'Create attention. Drive action.',
       description: 'High-impact advertising creatives engineered for modern digital platforms, helping businesses communicate their value and reach customers effectively.',
       deliverables: ['Promotional Videos', 'Social Media Ads', 'Product Ads', 'Campaign Creatives'],
+      whatWeDo: [
+        'High-Converting Video Ads & Motion',
+        'Meta, Google & TikTok Ad Creatives',
+        'Product Teasers & 3D Motion Commercials',
+        'Viral Social Reels & Short Content'
+      ],
       image: 'https://images.unsplash.com/photo-1542744094-3a31f272c490?q=80&w=1600&auto=format&fit=crop',
       alt: 'VERHOST Growth Creative — High-impact advertising creatives'
     },
     {
-      num: '06',
+      num: '04',
       title: 'BRAND COMMUNICATION',
       tagline: 'Make your brand impossible to overlook.',
       description: 'Strategic visual communication that gives businesses a consistent, professional, and memorable identity across digital and physical touchpoints.',
       deliverables: ['Posters & Marketing Creatives', 'Brand Identity', 'Social Media Designs', 'Digital & Print Collateral'],
+      whatWeDo: [
+        'Complete Brand Identity & Logo Systems',
+        'Marketing Posters & Digital Banners',
+        'Social Media Kits & Editorial Templates',
+        'Packaging, Pitch Decks & Corporate Collateral'
+      ],
       image: 'https://images.unsplash.com/photo-1509343256512-d77a5cb3791b?q=80&w=1600&auto=format&fit=crop',
       alt: 'VERHOST Brand Communication — Strategic visual communication and identity'
+    },
+    {
+      num: '05',
+      title: 'DIGITAL MARKETING',
+      tagline: 'Scale your reach. Convert audiences.',
+      description: 'High-ROI performance marketing campaigns across Meta and Google, social media management, and end-to-end customer acquisition funnels.',
+      deliverables: ['Meta Ads (FB & Instagram)', 'Social Media Management (SMM)', 'Google Search & YouTube Ads', 'Performance Marketing & Scaling'],
+      whatWeDo: [
+        'High-ROI Meta Ads (Facebook & Instagram)',
+        'Social Media Management (SMM) & Growth',
+        'Google Search, YouTube & PPC Ads',
+        'Audience Funnels & Retargeting Campaigns'
+      ],
+      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop',
+      alt: 'VERHOST Digital Marketing — Meta ads, SMM, and performance growth'
+    },
+    {
+      num: '06',
+      title: 'WHATSAPP AUTOMATION',
+      tagline: 'Automate conversations. Retain clients.',
+      description: 'Turn WhatsApp into a 24/7 autonomous sales and customer operations engine with smart chatbots, instant query resolution, and CRM synchronization.',
+      deliverables: ['24/7 Automated Query Replies', 'Client Support & Ticketing', 'Lead Capture & CRM Sync', 'Broadcast & Re-Engagement'],
+      whatWeDo: [
+        '24/7 Automated Query & Instant Reply',
+        'Automated Client Handling & Support',
+        'Instant Lead Capture & CRM Sync',
+        'Broadcast Messaging & Follow-Up Workflows'
+      ],
+      image: 'https://images.unsplash.com/photo-1611746872915-64382b5c76da?q=80&w=1600&auto=format&fit=crop',
+      alt: 'VERHOST WhatsApp Automation — 24/7 auto-reply, client handling, and CRM integration'
     }
   ];
 
@@ -1951,7 +1987,7 @@ export default function App() {
                 href="#services"
                 className="hidden sm:inline-flex items-center gap-2 px-6 py-4 text-white/70 hover:text-white font-mono text-xs uppercase tracking-widest transition-colors ml-auto border border-white/10 hover:border-white/30 backdrop-blur-sm"
               >
-                <span>EXPLORE PRACTICES [06]</span>
+                <span>EXPLORE PRACTICES [{String(services.length).padStart(2, '0')}]</span>
                 <span className="material-symbols-outlined text-sm">arrow_downward</span>
               </a>
             </div>
@@ -2038,7 +2074,7 @@ export default function App() {
             <div className="marquee-track flex items-center gap-0">
               {Array.from({ length: 2 }).map((_, trackIdx) => (
                 <div key={trackIdx} className="flex items-center gap-0">
-                  {['WEB DEVELOPMENT', 'ARTIFICIAL INTELLIGENCE', 'DATA ANALYTICS', 'AI CHATBOTS', 'PROMOTION ADS', 'CREATIVE DESIGN', 'AUTOMATION', 'MACHINE LEARNING'].map((item, i) => (
+                  {['DIGITAL PRESENCE', 'AI CHATBOTS', 'GROWTH CREATIVE', 'BRAND COMMUNICATION', 'DIGITAL MARKETING', 'WHATSAPP AUTOMATION'].map((item, i) => (
                     <React.Fragment key={i}>
                       <span className="font-mono text-[11px] font-bold uppercase tracking-widest text-white/80 px-6">{item}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-[#19C763] flex-shrink-0"></span>
@@ -2074,7 +2110,7 @@ export default function App() {
                 <div id="approach-divider" className="w-24 h-[2px] bg-[#16A34A] mb-8"></div>
 
                 <p className="text-xl sm:text-2xl text-black/75 font-normal leading-relaxed mb-8">
-                  VERHOST combines sovereign software engineering, algorithmic intelligence, and refined art direction to build practical digital systems for modern enterprises.
+                  VERHOST helps businesses build an attractive, outcome-driven, and growth-based digital presence.
                 </p>
 
                 {/* Editorial Highlight Pillars */}
@@ -2114,7 +2150,7 @@ export default function App() {
         <section 
           id="services" 
           className="relative w-full bg-[#FAFAF7] overflow-hidden scroll-mt-24 pt-16 sm:pt-20 lg:pt-24 pb-14 sm:pb-16 lg:pb-20 border-b border-black/10 select-none"
-          aria-label="Services — 06 Core Disciplines"
+          aria-label={`Services — ${String(services.length).padStart(2, '0')} Core Disciplines`}
         >
           {/* Architectural Oversized Faded SERVICES Background Watermark */}
           <div 
@@ -2140,7 +2176,7 @@ export default function App() {
                     </span>
                     <span className="text-black/30 font-mono text-xs">/</span>
                     <span className="text-black/60 font-mono text-[11px] uppercase tracking-wider">
-                      06 ARCHITECTURAL PRACTICES
+                      {String(services.length).padStart(2, '0')} ARCHITECTURAL PRACTICES
                     </span>
                   </div>
 
@@ -2156,7 +2192,7 @@ export default function App() {
                   <div className="hidden lg:flex items-center gap-2 pl-4 border-l border-black/10 font-mono text-xs">
                     <span className="text-black/40 uppercase">ACTIVE:</span>
                     <span className="text-[#16A34A] font-bold text-sm">
-                      0{activeServiceIdx + 1} <span className="text-black/30 font-normal">/ 06</span>
+                      {String(activeServiceIdx + 1).padStart(2, '0')} <span className="text-black/30 font-normal">/ {String(services.length).padStart(2, '0')}</span>
                     </span>
                   </div>
                 </div>
@@ -2304,7 +2340,7 @@ export default function App() {
                     id={`service-card-${idx}`}
                     role="group"
                     aria-roledescription="slide"
-                    aria-label={`${srv.num} of 06: ${srv.title}`}
+                    aria-label={`${srv.num} of ${String(services.length).padStart(2, '0')}: ${srv.title}`}
                     aria-hidden={!isActive}
                     onClick={() => {
                       if (hasMouseDragged.current) return;
@@ -2331,46 +2367,29 @@ export default function App() {
                       isActive ? 'cursor-default' : 'cursor-pointer hover:opacity-95'
                     }`}
                   >
-                    {/* Base Image Layer (Single optimized layer on mobile; grayscale base + full-color crossfade on desktop) */}
+                    {/* Full-Color Vibrant Image Layer (Vibrant color on all cards, no grayscale) */}
                     <img 
                       alt={srv.alt}
                       src={isMobile ? srv.image.replace('w=1600', 'w=720') : srv.image}
                       loading="lazy"
                       decoding="async"
-                      className={`absolute inset-0 w-full h-full object-cover select-none pointer-events-none ${
-                        isMobile
-                          ? 'brightness-90'
-                          : 'filter grayscale contrast-[0.92] brightness-[0.88]'
-                      }`}
+                      className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none"
                     />
 
-                    {/* Full Color Image Layer - Desktop GPU opacity crossfade */}
-                    {!isMobile && (
-                      <img 
-                        alt=""
-                        src={srv.image}
-                        loading="lazy"
-                        decoding="async"
-                        aria-hidden="true"
-                        style={{ opacity: isActive ? 1 : 0 }}
-                        className="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out select-none pointer-events-none"
-                      />
-                    )}
-
-                    {/* Inactive Card Dimming Scrim */}
+                    {/* Dark Black Background Scrim: ONLY active on the center card for crisp text readability */}
                     <div 
                       aria-hidden="true"
-                      style={{ opacity: isActive ? 0 : 0.28 }}
-                      className="absolute inset-0 bg-black transition-opacity duration-500 ease-out pointer-events-none"
+                      style={{ opacity: isActive ? 1 : 0 }}
+                      className="absolute inset-0 bg-gradient-to-b from-black/85 via-black/70 to-black/95 pointer-events-none z-10 transition-opacity duration-350 ease-out"
                     />
 
-                    {/* Top Right Circular Arrow Icon (Matching Reference) */}
-                    <div className="absolute top-4 right-4 z-20">
+                    {/* Top Right Circular Arrow Icon */}
+                    <div className="absolute top-4 right-4 sm:right-5 z-20">
                       {isActive ? (
                         <a
                           href="#contact"
                           aria-label={`Inquire about ${srv.title}`}
-                          className="w-10 h-10 rounded-full bg-black/45 lg:bg-white/20 hover:bg-[#16A34A] lg:backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
+                          className="w-10 h-10 rounded-full bg-black/50 lg:bg-white/20 hover:bg-[#16A34A] lg:backdrop-blur-md border border-white/30 text-white flex items-center justify-center transition-all duration-300 hover:scale-110 shadow-lg"
                         >
                           <span className="material-symbols-outlined text-lg">north_east</span>
                         </a>
@@ -2381,10 +2400,43 @@ export default function App() {
                       )}
                     </div>
 
+                    {/* ─── CENTRE: WHAT WE DO (POINT-WISE CAPABILITIES DIRECTLY ON IMAGE, ONLY ON ACTIVE CARD, LARGE TYPOGRAPHY) ─── */}
+                    <div 
+                      style={{ 
+                        opacity: isActive ? 1 : 0,
+                        transform: isActive ? 'translateY(0)' : 'translateY(12px)',
+                        pointerEvents: isActive ? 'auto' : 'none',
+                        transition: 'opacity 350ms cubic-bezier(0.22, 1, 0.36, 1), transform 350ms cubic-bezier(0.22, 1, 0.36, 1)'
+                      }}
+                      className="absolute inset-x-0 top-16 bottom-[115px] sm:bottom-[125px] z-20 px-5 sm:px-6 flex flex-col justify-center select-none"
+                    >
+                      {/* Section Kicker */}
+                      <div className="inline-flex items-center gap-2 mb-3 sm:mb-4 font-mono text-xs sm:text-[13px] font-bold uppercase tracking-widest text-[#19C763] drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+                        <span className="w-2 h-2 rounded-full bg-[#16A34A] shadow-[0_0_8px_#16A34A] animate-pulse"></span>
+                        <span>WHAT WE DELIVER</span>
+                      </div>
+
+                      {/* Prominent Large Point-Wise List (No box - floating directly on image) */}
+                      <ul className="space-y-3 sm:space-y-3.5">
+                        {(srv.whatWeDo || srv.deliverables).map((item, pIdx) => (
+                          <li key={pIdx} className="flex items-start gap-3 text-left">
+                            <span className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-[#16A34A] border border-[#19C763] flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md shadow-[#16A34A]/50">
+                              <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white stroke-[3.5]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            </span>
+                            <span className="text-sm sm:text-base md:text-[17px] lg:text-[18px] font-bold font-sans text-white leading-tight drop-shadow-[0_2px_10px_rgba(0,0,0,0.95)]">
+                              {item}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
                     {/* ─── BOTTOM FROSTED GLASS EFFECT PANEL (MATCHING REFERENCE) ─── */}
-                    <div className="absolute inset-x-0 bottom-0 z-20 p-5 sm:p-6 bg-black/75 lg:bg-black/50 lg:backdrop-blur-xl border-t border-white/20 text-left flex flex-col justify-end transition-colors duration-300">
+                    <div className="absolute inset-x-0 bottom-0 z-20 p-4 sm:p-5 bg-black/80 lg:bg-black/60 lg:backdrop-blur-xl border-t border-white/20 text-left flex flex-col justify-end transition-colors duration-300">
                       {/* Rating Stars & Practice Indicator */}
-                      <div className="flex items-center gap-1 text-amber-400 text-xs mb-1.5 select-none">
+                      <div className="flex items-center gap-1 text-amber-400 text-xs mb-1 select-none">
                         <span>★</span>
                         <span>★</span>
                         <span>★</span>
@@ -2396,12 +2448,12 @@ export default function App() {
                       </div>
 
                       {/* Service Name */}
-                      <h3 className="font-display font-bold text-xl sm:text-2xl text-white uppercase tracking-tight leading-[1.1] mb-1 drop-shadow-sm">
+                      <h3 className="font-display font-bold text-lg sm:text-xl md:text-2xl text-white uppercase tracking-tight leading-[1.1] mb-0.5 drop-shadow-sm">
                         {srv.title}
                       </h3>
 
                       {/* Tagline / Subtitle */}
-                      <p className="text-xs text-white/75 font-mono uppercase tracking-wider line-clamp-1">
+                      <p className="text-[11px] sm:text-xs text-white/75 font-mono uppercase tracking-wider line-clamp-1">
                         {srv.tagline}
                       </p>
                     </div>
@@ -2573,7 +2625,7 @@ export default function App() {
                 <div className="w-24 h-[2px] bg-[#19C763] mb-8"></div>
 
                 <p className="text-lg sm:text-xl text-white/70 font-normal leading-relaxed max-w-2xl font-sans mb-8">
-                  When software, artificial intelligence, and workflows are engineered with rigorous precision, complexity fades into frictionless, compounding growth.
+                  We deliver all services using modern technology systems to drive your business into current tech growth.
                 </p>
 
                 {/* Telemetry Metric Badges */}
@@ -3314,12 +3366,12 @@ export default function App() {
                         onChange={(e) => setFormData({...formData, service: e.target.value})}
                         className="w-full bg-white border border-black/15 rounded px-4 py-3 text-sm text-[#050505] focus:outline-none focus:border-[#16A34A] transition-colors font-sans"
                       >
-                        <option value="Web Development">01 / Web Development</option>
-                        <option value="AI & Machine Learning">02 / AI &amp; Machine Learning</option>
-                        <option value="Data Analytics">03 / Data Analytics &amp; Reporting</option>
-                        <option value="AI Chatbots">04 / AI Chatbot Creation</option>
-                        <option value="Promotion Ads Generation">05 / Promotion Ads Generation</option>
-                        <option value="Posters & Creative Design">06 / Posters &amp; Creative Design</option>
+                        <option value="Digital Presence">01 / Digital Presence &amp; Websites</option>
+                        <option value="AI Conversations">02 / AI Conversations &amp; Chatbots</option>
+                        <option value="Growth Creative">03 / Growth Creative &amp; Ads</option>
+                        <option value="Brand Communication">04 / Brand Communication &amp; Design</option>
+                        <option value="Digital Marketing">05 / Digital Marketing (Meta Ads &amp; SMM)</option>
+                        <option value="WhatsApp Automation">06 / WhatsApp Automation &amp; CRM</option>
                         <option value="Full Comprehensive Suite">Full Comprehensive Suite</option>
                       </select>
                     </div>
@@ -3561,6 +3613,9 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* ─── FLOATING ACTION BUTTONS: WHATSAPP & VERHOST AI CHATBOT ─── */}
+      <ChatbotWidget />
 
     </div>
   );
